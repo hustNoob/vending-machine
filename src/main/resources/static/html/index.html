@@ -26,9 +26,31 @@
     <!-- 中间商品展示区域 -->
     <main class="content">
         <h1>商品列表</h1>
+        <!-- 商品展示 -->
         <div id="products">
-            <!-- 商品列表将通过 JS 动态填充 -->
+            <!-- 商品列表动态生成 -->
         </div>
+
+        <!-- 购物车 -->
+        <div id="cart">
+            <h3>购物车</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>商品名称</th>
+                    <th>单价</th>
+                    <th>数量</th>
+                    <th>总价</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="cartItems">
+                <!-- 动态加载购物车内容 -->
+                </tbody>
+            </table>
+            <button id="checkoutButton">去付款</button>
+        </div>
+
     </main>
 
     <!-- 右侧用户信息和订单区域 -->

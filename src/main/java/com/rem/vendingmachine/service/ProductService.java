@@ -19,4 +19,6 @@ public interface ProductService {
 
     List<Product> getLowStockProducts(); //查库存不足的商品
     boolean restockProductById(int id, int quantity);//补库存
+
+    List<Product> getRecommendedProducts(int userId);
 }

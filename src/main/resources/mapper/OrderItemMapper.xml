@@ -28,7 +28,6 @@
         )
         GROUP BY product_id
         ORDER BY SUM(quantity) DESC
-        LIMIT 3
     </select>
 
     <!-- 查询系统热销商品 -->
@@ -37,7 +36,6 @@
         FROM order_item
         GROUP BY product_id
         ORDER BY SUM(quantity) DESC
-        LIMIT 3
     </select>
 
 

@@ -7,7 +7,7 @@
     <!-- 插入商品到某台售货机 -->
     <insert id="insertVendingMachineProduct" parameterType="vendingMachineProduct">
         INSERT INTO vending_machine_product (vending_machine_id, product_id, stock, price, product_name)
-        VALUES (#{vendingMachineId}, #{productId}, #{stock}, #{price}, #{product_name});
+        VALUES (#{vendingMachineId}, #{productId}, #{stock}, #{price}, #{productName});
     </insert>
 
     <!-- 删除某台售货机中的某商品记录 -->

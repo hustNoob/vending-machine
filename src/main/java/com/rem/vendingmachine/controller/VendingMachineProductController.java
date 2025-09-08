@@ -1,6 +1,8 @@
 package com.rem.vendingmachine.controller;
 
+import com.rem.vendingmachine.model.Product;
 import com.rem.vendingmachine.model.VendingMachineProduct;
+import com.rem.vendingmachine.service.ProductService;
 import com.rem.vendingmachine.service.VendingMachineProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,9 @@ public class VendingMachineProductController {
     @Autowired
     private VendingMachineProductService vendingMachineProductService;
 
+    @Autowired
+    private ProductService productService;
+
     /**
      * 获取某台售货机中的商品列表及其库存
      */
@@ -26,15 +31,27 @@ public class VendingMachineProductController {
     /**
      * 添加商品到售货机
      */
+    /**
+     * 添加商品到售货机
+     */
     @PostMapping("/{vendingMachineId}/add-product")
     public String addProductToMachine(@PathVariable int vendingMachineId,
                                       @RequestParam int productId,
-                                      @RequestParam String productName,
-                                      @RequestParam BigDecimal price,
                                       @RequestParam int stock) {
-        boolean success = vendingMachineProductService.addProductToMachine(vendingMachineId, productId, stock, productName, price);
+        // 验证商品是否存在于厂商商品列表
+        Product product = productService.getProductById(productId);
+        if (product == null) {
+            throw new RuntimeException("选择的商品不存在");
+        }
+
+        // 添加商品到售货机
+        boolean success = vendingMachineProductService.addProductToMachine(
+                vendingMachineId, productId, stock, product.getName(), product.getPrice()
+        );
+
         return success ? "商品已成功添加到售货机！" : "添加商品失败，请重试！";
     }
+
 
     /**
      * 更新售货机中商品的库存

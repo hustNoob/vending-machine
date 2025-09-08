@@ -10,6 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class MqttSubscriberService {
@@ -25,8 +29,19 @@ public class MqttSubscriberService {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    // 内存中的 MQTT 消息存储
+    private final Map<String, List<MqttLog>> messageLogs = new ConcurrentHashMap<>();
+
+    // 构造函数初始化存储结构
+    public MqttSubscriberService() {
+        messageLogs.put("heartbeat", new ArrayList<>());
+        messageLogs.put("state", new ArrayList<>());
+        messageLogs.put("order", new ArrayList<>());
+    }
+
     /**
      * 订阅指定主题
+     *
      * @param topic 待订阅的主题
      */
     public void subscribe(String topic) {
@@ -39,7 +54,8 @@ public class MqttSubscriberService {
     }
 
     /**
-     * 处理收到的消息，根据主题路由到不同方法
+     * 处理收到的 MQTT 消息，根据主题分类存储并更新后端状态
+     *
      * @param topic   消息的主题
      * @param message 消息对象
      */
@@ -48,13 +64,16 @@ public class MqttSubscriberService {
             String payload = new String(message.getPayload()); // 解码消息内容
             System.out.println("收到消息 - 主题: " + topic + ", 内容: " + payload);
 
-            // 根据主题类型处理
+            // 创建日志对象
+            MqttLog log = new MqttLog(topic, payload, System.currentTimeMillis());
+
+            // 根据主题分类处理
             if (topic.startsWith("vendingmachine/heartbeat")) {
-                handleHeartbeat(topic);
+                handleHeartbeat(topic, log);
             } else if (topic.startsWith("vendingmachine/state")) {
-                handleState(payload);
+                handleState(topic, payload, log);
             } else if (topic.startsWith("vendingmachine/order")) {
-                handleOrder(payload);
+                handleOrder(topic, payload, log);
             } else {
                 System.err.println("未知主题消息：" + topic);
             }
@@ -64,9 +83,9 @@ public class MqttSubscriberService {
     }
 
     /**
-     * 处理心跳消息，更新设备状态
+     * 处理心跳消息并存储到日志
      */
-    private void handleHeartbeat(String topic) {
+    private void handleHeartbeat(String topic, MqttLog log) {
         try {
             // 从主题中提取 machineId
             String[] topicParts = topic.split("/");
@@ -74,16 +93,21 @@ public class MqttSubscriberService {
 
             // 更新数据库中的 lastUpdateTime
             vendingMachineService.updateLastUpdateTime(machineId, LocalDateTime.now());
-            System.out.println("更新心跳 - 设备ID: " + machineId + ", 时间: " + LocalDateTime.now());
+            System.out.println("心跳已更新 - 设备ID: " + machineId);
+
+            // 存储日志
+            synchronized (messageLogs) {
+                messageLogs.get("heartbeat").add(log);
+            }
         } catch (Exception e) {
             System.err.println("处理心跳消息失败：" + e.getMessage());
         }
     }
 
     /**
-     * 处理状态消息，更新设备运行状态
+     * 处理状态消息
      */
-    private void handleState(String payload) {
+    private void handleState(String topic, String payload, MqttLog log) {
         try {
             // 解析 JSON 消息
             JsonNode root = objectMapper.readTree(payload);
@@ -94,16 +118,21 @@ public class MqttSubscriberService {
 
             // 更新售货机状态到数据库
             vendingMachineService.updateVendingMachineStatus(machineId, temperature, status);
-            System.out.println("更新状态 - 设备ID: " + machineId + ", 温度: " + temperature + ", 状态: " + status);
+            System.out.println("状态已更新 - 设备ID: " + machineId + ", 温度: " + temperature + ", 状态: " + status);
+
+            // 存储日志
+            synchronized (messageLogs) {
+                messageLogs.get("state").add(log);
+            }
         } catch (Exception e) {
             System.err.println("处理状态消息失败：" + e.getMessage());
         }
     }
 
     /**
-     * 处理订单消息，创建订单并更新库存
+     * 处理订单消息
      */
-    private void handleOrder(String payload) {
+    private void handleOrder(String topic, String payload, MqttLog log) {
         try {
             // 解析 JSON 消息
             JsonNode root = objectMapper.readTree(payload);
@@ -116,8 +145,52 @@ public class MqttSubscriberService {
             // 调用服务创建订单
             orderService.createOrderFromMachine(vendingMachineId, userId, orderId, totalPrice);
             System.out.println("订单已成功处理 - 订单ID: " + orderId);
+
+            // 存储日志
+            synchronized (messageLogs) {
+                messageLogs.get("order").add(log);
+            }
         } catch (Exception e) {
             System.err.println("处理订单消息失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取分类的 MQTT 消息日志
+     *
+     * @param type 消息类型（heartbeat, state, order）
+     * @return 消息日志列表
+     */
+    public List<MqttLog> getLogs(String type) {
+        synchronized (messageLogs) {
+            return new ArrayList<>(messageLogs.getOrDefault(type, new ArrayList<>()));
+        }
+    }
+
+    /**
+     * 日志数据类
+     */
+    public static class MqttLog {
+        private final String topic;
+        private final String payload;
+        private final long timestamp;
+
+        public MqttLog(String topic, String payload, long timestamp) {
+            this.topic = topic;
+            this.payload = payload;
+            this.timestamp = timestamp;
+        }
+
+        public String getTopic() {
+            return topic;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
         }
     }
 }

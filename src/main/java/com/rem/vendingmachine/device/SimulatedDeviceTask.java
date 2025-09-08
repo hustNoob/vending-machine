@@ -15,7 +15,7 @@ public class SimulatedDeviceTask {
     public void start() {
         Timer timer = new Timer();
 
-        // 心跳上报任务，每 30 秒一次
+        // 心跳上报任务，每 10 秒一次
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -23,9 +23,9 @@ public class SimulatedDeviceTask {
                 String payload = "{}"; // 心跳消息内容一般为空
                 client.publish(topic, payload);
             }
-        }, 0, 30000);
+        }, 0, 10000);
 
-        // 状态上报任务，每 60 秒一次
+        // 状态上报任务，每 10 秒一次
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -33,6 +33,6 @@ public class SimulatedDeviceTask {
                 String payload = "{\"machineId\": \"" + client.getMachineId() + "\", \"temperature\": 25.5, \"status\": 1}";
                 client.publish(topic, payload);
             }
-        }, 0, 60000);
+        }, 0, 10000);
     }
 }

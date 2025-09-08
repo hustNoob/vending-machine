@@ -48,12 +48,14 @@
             </table>
         </div>
 
-        <!-- 售货机商品管理 -->
+        <!-- 商品管理 -->
         <div class="vending-machine-product-list">
             <h3>商品管理</h3>
+            <!-- 选择售货机 -->
             <select id="selectMachine">
-                <option value="">选择售货机</option>
+                <option value="">请选择售货机</option>
             </select>
+            <!-- 商品表格 -->
             <table>
                 <thead>
                 <tr>
@@ -68,11 +70,14 @@
                 <!-- 动态加载商品数据 -->
                 </tbody>
             </table>
+
+            <!-- 添加商品表单 -->
             <h4>添加商品</h4>
             <form id="addProductToMachineForm">
-                <input type="number" id="productId" placeholder="商品 ID">
-                <input type="number" id="productPrice" placeholder="价格 (单位: 元)">
-                <input type="number" id="productStock" placeholder="库存">
+                <select id="availableProducts">
+                    <!-- 动态加载厂商商品列表 -->
+                </select>
+                <input type="number" id="newProductStock" placeholder="库存数量">
                 <button type="submit">添加商品</button>
             </form>
         </div>

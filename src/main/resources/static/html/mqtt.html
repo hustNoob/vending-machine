@@ -29,9 +29,47 @@
     <!-- 数据上报 -->
     <div class="mqtt-data">
         <h3>实时数据上报</h3>
-        <div id="mqttDataList">
-            <!-- 动态填充上报数据 -->
-            <p>等待接收数据...</p>
+
+        <!-- 心跳数据 -->
+        <div id="heartbeatLogs">
+            <h4>心跳上报</h4>
+            <table>
+                <thead>
+                <tr><th>设备 ID</th><th>心跳时间</th></tr>
+                </thead>
+                <tbody id="heartbeatList">
+                <!-- 动态数据会被填充到这里 -->
+                <tr><td colspan="2">暂无数据</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 状态数据 -->
+        <div id="stateLogs">
+            <h4>状态上报</h4>
+            <table>
+                <thead>
+                <tr><th>设备 ID</th><th>温度</th><th>状态</th><th>时间</th></tr>
+                </thead>
+                <tbody id="stateList">
+                <!-- 动态数据会被填充到这里 -->
+                <tr><td colspan="4">暂无数据</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 订单数据 -->
+        <div id="orderLogs">
+            <h4>订单上报</h4>
+            <table>
+                <thead>
+                <tr><th>订单 ID</th><th>用户 ID</th><th>金额</th><th>时间</th></tr>
+                </thead>
+                <tbody id="orderList">
+                <!-- 动态数据会被填充到这里 -->
+                <tr><td colspan="4">暂无数据</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

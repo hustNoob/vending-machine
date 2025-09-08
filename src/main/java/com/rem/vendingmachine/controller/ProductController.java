@@ -113,18 +113,7 @@ public class ProductController {
      * @return 推荐商品结果
      */
     @GetMapping("/recommend/{userId}")
-    public List<Product> getRecommendedProducts(@PathVariable int userId) {
-        //1: 获取推荐的商品 ID 列表
-        List<Integer> productIds = orderService.getRecommendedProductsForUser(userId);
-
-        //2: 查询商品的详细信息
-        List<Product> recommendedProducts = new ArrayList<>();
-        for (Integer productId : productIds) {
-            Product product = productService.getProductById(productId);
-            if (product != null) {
-                recommendedProducts.add(product);
-            }
-        }
-        return recommendedProducts; // 返回推荐的商品列表
+    public List<Product> recommendProductsForUser(@PathVariable int userId) {
+        return productService.getRecommendedProducts(userId);
     }
 }
