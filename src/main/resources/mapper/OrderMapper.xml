@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rem.vendingmachine.dao.OrderMapper">
+
+    <!-- 插入订单 -->
+    <insert id="insertOrder" parameterType="order" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO order_table (user_id, total_price, create_time)
+        VALUES (#{userId}, #{totalPrice}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <!-- 根据订单 ID 查询订单 -->
+    <select id="selectOrderById" parameterType="int" resultType="order">
+        SELECT *
+        FROM order_table
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据用户 ID 查询订单历史 -->
+    <select id="selectOrdersByUserId" parameterType="int" resultType="order">
+        SELECT *
+        FROM order_table
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 订单支付 -->
+    <update id="updatePaymentStatus" parameterType="int">
+        UPDATE order_table
+        SET payment_time = CURRENT_TIMESTAMP
+        WHERE id = #{orderId} AND payment_time IS NULL
+    </update>
+
+    <!-- 更新订单完成时间 -->
+    <update id="updateCompletionStatus" parameterType="int">
+        UPDATE order_table
+        SET completion_time = CURRENT_TIMESTAMP
+        WHERE id = #{orderId} AND payment_time IS NOT NULL AND completion_time IS NULL
+    </update>
+    
+    <select id="selectAllOrders" resultType="order">
+        select *
+        from order_table
+    </select>
+
+
+</mapper>

@@ -1,0 +1,5 @@
+controller          # 控制层，处理 HTTP 请求（如用户管理接口）
+service             # 业务逻辑层
+dao                 # 数据库访问层 (Mapper接口)
+mqtt                # MQTT 通信模块
+model               # 数据模型 (Java Bean 或 Entity 对象)

@@ -1,0 +1,12 @@
+POST http://localhost:8080/api/order/create
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "productIds": [2],
+  "quantities": [5]
+}
+
+###
+
+GET http://localhost:8080/api/order/details/1

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rem.vendingmachine.dao.UserMapper">
+
+    <insert id="insertUser" parameterType="user">
+        insert into user(username,password,email,phone,create_time)
+        values(#{username},#{password},#{email},#{phone},current_timestamp)
+    </insert>
+
+    <select id="selectUserByUsername" parameterType="string" resultType="user">
+        select *
+        from user
+        where username=#{username}
+    </select>
+
+    <select id="getBalanceByUserId" parameterType="int" resultType="java.math.BigDecimal">
+        SELECT balance
+        FROM user
+        WHERE id = #{userId}
+    </select>
+
+    <update id="updateBalanceByUserId" parameterType="map">
+        UPDATE user
+        SET balance = #{balance}
+        WHERE id = #{userId}
+    </update>
+    
+    <select id="selectUserByUserId" parameterType="int" resultType="user">
+        select *
+        from user
+        where id=#{userId}
+    </select>
+
+    <select id="selectAllUsers" resultType="user">
+        select *
+        from user
+    </select>
+
+    <update id="updateUserByUserId" parameterType="user">
+        update user
+        set id=#{id},username=#{username},password=#{password},email=#{email},phone=#{phone},balance=#{balance}
+        where id=#{id}
+    </update>
+
+    <delete id="deleteUserByUserId" parameterType="int">
+        delete user
+        from user
+        where id = #{userId}
+    </delete>
+
+</mapper>

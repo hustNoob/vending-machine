@@ -1,0 +1,5 @@
+PUT http://localhost:8080/api/order/pay/2
+
+###
+
+GET http://localhost:8080/api/order/1

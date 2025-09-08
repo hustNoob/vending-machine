@@ -1,0 +1,17 @@
+POST http://localhost:8080/api/vending-machine/add
+Content-Type: application/json
+
+{
+  "machineCode": "VM001",
+  "status": 1,
+  "temperature": 18.5,
+  "locationDesc": "Mall A - 3rd Floor"
+}
+
+###
+
+GET http://localhost:8080/api/vending-machine/status/1
+
+###
+
+DELETE http://localhost:8080/api/vending-machine/delete/1

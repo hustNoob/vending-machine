@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品购买</title>
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+</head>
+<body>
+<script>
+    window.onload = function () {
+        const userId = localStorage.getItem("loggedInUserId");
+        if (!userId) {
+            alert("请先登录！");
+            window.location.href = "/html/users.html";
+            return;
+        }
+        fetchProducts();
+        loadBalance();
+        displayUserDetails();
+    };
+</script>
+<header>
+    <h1>商品购买页面</h1>
+    <nav>
+        <ul>
+            <li><a href="/html/index.html">主页</a></li>
+        </ul>
+    </nav>
+    <div id="userInfo">
+        <p>用户ID: <span id="currentUserId"></span></p>
+        <p>账户余额: <span id="currentUserBalance"></span></p>
+    </div>
+</header>
+<main>
+    <div class="balance-box">
+        当前余额：<span id="balanceDisplay"></span> 元
+        <input type="number" id="rechargeAmount" placeholder="充值金额">
+        <button onclick="recharge()">充值</button>
+    </div>
+    <section class="buy-section">
+        <div class="product-list">
+            <h2>商品列表</h2>
+            <table id="productTable">
+                <thead>
+                <tr>
+                    <th>商品ID</th>
+                    <th>名称</th>
+                    <th>品牌</th>
+                    <th>价格</th>
+                    <th>库存</th>
+                    <th>购买数量</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 动态加载商品数据 -->
+                </tbody>
+            </table>
+        </div>
+        <div class="order-action">
+            <button class="order-button" onclick="submitOrder()">提交订单</button>
+        </div>
+    </section>
+</main>
+<footer>
+    <p>&copy;无人售货机管理系统</p>
+</footer>
+<script src="/js/buy.js"></script>
+
+</body>
+</html>

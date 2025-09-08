@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rem.vendingmachine.dao.VendingMachineMapper">
+
+    <!-- 插入售货机 -->
+    <insert id="insertVendingMachine" parameterType="vendingMachine">
+        INSERT INTO vending_machine.vending_machine (machine_code, status, temperature, location_desc, activation_time)
+        VALUES (#{machineCode}, #{status}, #{temperature}, #{locationDesc}, current_timestamp)
+    </insert>
+
+    <!-- 更新售货机 -->
+    <update id="updateVendingMachine" parameterType="vendingMachine">
+        UPDATE vending_machine.vending_machine
+        SET status = #{status},
+            temperature = #{temperature},
+            location_desc = #{locationDesc},
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除售货机 -->
+    <delete id="deleteVendingMachineById" parameterType="int">
+        DELETE FROM vending_machine.vending_machine WHERE id = #{id}
+    </delete>
+
+    <!-- 查询所有售货机 -->
+    <select id="selectAllVendingMachines" resultType="vendingMachine">
+        SELECT *
+        FROM vending_machine.vending_machine
+    </select>
+
+    <!-- 根据ID查询售货机 -->
+    <select id="selectVendingMachineById" parameterType="int" resultType="vendingMachine">
+        SELECT *
+        FROM vending_machine.vending_machine
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据状态查询售货机 -->
+    <select id="selectVendingMachinesByStatus" parameterType="int" resultType="vendingMachine">
+        SELECT *
+        FROM vending_machine.vending_machine
+        WHERE status = #{status}
+    </select>
+
+</mapper>

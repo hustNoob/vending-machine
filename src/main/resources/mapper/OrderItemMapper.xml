@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rem.vendingmachine.dao.OrderItemMapper">
+
+    <!-- 插入子订单 -->
+    <insert id="insertOrderItem" parameterType="orderItem">
+        INSERT INTO order_item (order_id, product_id, quantity, price, subtotal)
+        VALUES (#{orderId}, #{productId}, #{quantity}, #{price}, #{subtotal})
+    </insert>
+
+    <!-- 根据订单 ID 查询子订单 -->
+    <select id="selectOrderItemsByOrderId" parameterType="int" resultType="orderItem">
+        SELECT *
+        FROM order_item
+        WHERE order_id = #{orderId}
+    </select>
+
+    <!-- 查询用户购买数量最多的商品 -->
+    <select id="getTopPurchasedProductsByUser" parameterType="int" resultType="int">
+        SELECT product_id
+        FROM order_item
+        WHERE order_id IN (
+            SELECT id
+            FROM order_table
+            WHERE user_id = #{userId}
+        )
+        GROUP BY product_id
+        ORDER BY SUM(quantity) DESC
+        LIMIT 3
+    </select>
+
+    <!-- 查询系统热销商品 -->
+    <select id="getTopSellingProducts" resultType="int">
+        SELECT product_id
+        FROM order_item
+        GROUP BY product_id
+        ORDER BY SUM(quantity) DESC
+        LIMIT 3
+    </select>
+
+
+</mapper>

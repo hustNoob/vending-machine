@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理</title>
+    <link rel="stylesheet" type="text/css" href="/css/user.css">
+</head>
+<body>
+<header>
+    <h1>用户管理</h1>
+    <nav>
+        <ul>
+            <li><a href="/html/index.html">主页</a></li>
+            <li><a href="#" onclick="fetchUsers()">刷新用户列表</a></li>
+        </ul>
+    </nav>
+</header>
+<main>
+    <section class="user-management">
+        <!-- 用户列表 -->
+        <div class="user-list">
+            <h2>用户列表</h2>
+            <table id="userTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>密码</th>
+                    <th>邮箱</th>
+                    <th>电话</th>
+                    <th>余额</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 动态加载用户数据 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 用户注册表单 -->
+        <div class="user-form">
+            <h3>注册用户</h3>
+            <form id="registerForm">
+                <label>用户名: <input type="text" id="username"></label><br>
+                <label>密码: <input type="password" id="password"></label><br>
+                <label>邮箱: <input type="email" id="email"></label><br>
+                <label>电话: <input type="text" id="phone"></label><br>
+                <button type="button" onclick="registerUser()">注册用户</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- 用户登录表单 -->
+    <section class="login-form-wrapper">
+        <div class="login-form">
+            <h3>用户登录</h3>
+            <form id="loginForm">
+                <label>用户名: <input type="text" id="loginUsername"></label><br>
+                <label>密码: <input type="password" id="loginPassword"></label><br>
+                <button type="button" onclick="loginUser()">登录</button>
+            </form>
+        </div>
+    </section>
+</main>
+<footer>
+    <p>&copy; 2023 无人售货机管理系统</p>
+</footer>
+<script src="/js/users.js"></script>
+</body>
+</html>

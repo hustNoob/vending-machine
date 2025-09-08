@@ -1,0 +1,25 @@
+### 测试注册接口
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "password123",
+  "email": "testuser@example.com",
+  "phone": "123456789"
+}
+
+### 测试登录接口
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "password123"
+}
+
+###
+GET http://localhost:8080/api/user/id/1
+
+
+

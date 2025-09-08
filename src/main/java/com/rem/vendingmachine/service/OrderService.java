@@ -1,0 +1,34 @@
+package com.rem.vendingmachine.service;
+
+import com.rem.vendingmachine.model.Order;
+
+import java.util.List;
+
+public interface OrderService {
+
+    // 创建订单
+    boolean createOrder(Order order, List<Integer> productIds, List<Integer> quantities);
+
+    // 查询单个订单详情
+    Order getOrderById(int orderId);
+
+    // 查询订单详情（包含商品清单）
+    Order getOrderWithDetailsById(int orderId);
+
+    // 查询用户的历史订单
+    List<Order> getOrderHistoryByUserId(int userId);
+
+    // 推销
+    List<Integer> getRecommendedProductsForUser(int userId);
+    List<Integer> getTopSellingProducts();
+
+    //订单支付
+    boolean markOrderAsPaid(int orderId);
+
+    //订单完成
+    boolean markOrderAsCompleted(int orderId);
+
+    //查询全部订单
+    List<Order> getAllOrders();
+
+}

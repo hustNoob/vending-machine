@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>售货机管理</title>
+    <link rel="stylesheet" type="text/css" href="/css/machine.css">
+</head>
+<body>
+<header>
+    <h1>售货机管理</h1>
+    <nav>
+        <ul>
+            <li><a href="/html/index.html">主页</a></li>
+            <li><a href="#" onclick="fetchVendingMachines()">刷新售货机列表</a></li>
+        </ul>
+    </nav>
+</header>
+<main>
+    <section class="machine-management">
+        <!-- 售货机列表 -->
+        <div class="machine-list">
+            <h2>售货机列表</h2>
+            <table id="machineTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>设备编号</th>
+                    <th>状态</th>
+                    <th>温度</th>
+                    <th>位置信息</th>
+                    <th>激活时间</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 动态加载售货机数据 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 新增售货机 -->
+        <div class="machine-form">
+            <h3>新增售货机</h3>
+            <form id="addMachineForm">
+                <label>设备编号: <input type="text" id="machineCode"></label><br>
+                <label>状态:
+                    <select id="machineStatus">
+                        <option value="1">在线</option>
+                        <option value="0">离线</option>
+                        <option value="2">需要维护</option>
+                    </select>
+                </label><br>
+                <label>温度: <input type="number" id="machineTemperature" step="0.1"></label><br>
+                <label>位置信息: <input type="text" id="machineLocation"></label><br>
+                <button type="button" onclick="addVendingMachine()">新增售货机</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- MQTT 操作区 -->
+    <section class="mqtt-command">
+        <div class="command-form">
+            <h3>发送 MQTT 命令</h3>
+            <form id="commandForm">
+                <label>设备编号: <input type="text" id="commandMachineCode"></label><br>
+                <label>命令内容: <input type="text" id="commandContent"></label><br>
+                <button type="button" onclick="sendCommandToMachine()">发送命令</button>
+            </form>
+        </div>
+    </section>
+</main>
+<footer>
+    <p>&copy;无人售货机管理系统</p>
+</footer>
+<script src="/js/machines.js"></script>
+</body>
+</html>
