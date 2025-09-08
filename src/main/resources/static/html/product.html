@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品管理</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<!-- 顶部返回主页按钮 -->
+<div class="header">
+    <button onclick="window.location.href='index.html'" class="back-button">返回主页</button>
+</div>
+
+<!-- 主体内容 -->
+<div class="product-container">
+    <!-- 新增商品模块 -->
+    <div class="product-form">
+        <h2>新增商品</h2>
+        <form id="productCreateForm">
+            <input type="text" id="productName" placeholder="商品名称">
+            <input type="number" id="productPrice" placeholder="价格 (单位: 元)">
+            <button type="submit">添加商品</button>
+        </form>
+    </div>
+
+    <!-- 商品列表模块 -->
+    <div class="product-list">
+        <h2>商品列表</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>名称</th>
+                <th>价格</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="productList">
+            <!-- 商品数据通过 JS 动态添加 -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/js/product.js"></script>
+</body>
+</html>

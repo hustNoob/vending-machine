@@ -1,6 +1,7 @@
 package com.rem.vendingmachine.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class VendingMachine {
 
@@ -11,6 +12,8 @@ public class VendingMachine {
     private String locationDesc;      // 位置信息
     private LocalDateTime activationTime; // 激活时间
     private LocalDateTime updateTime;     // 更新时间
+
+    private List<VendingMachineProduct> products;
 
     public VendingMachine() {}
 

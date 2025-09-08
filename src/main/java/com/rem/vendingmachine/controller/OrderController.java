@@ -114,4 +114,13 @@ public class OrderController {
     public List<Order> getAllOrders(){
         return orderService.getAllOrders();
     }
+
+    @GetMapping("/query")
+    public List<Order> queryOrders(
+            @RequestParam(required = false) Integer userId,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer machineId) {
+        return orderService.queryOrders(userId, status, machineId);
+    }
+
 }

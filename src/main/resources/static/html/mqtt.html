@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT 演示</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<!-- 返回主页按钮 -->
+<div class="header">
+    <button onclick="window.location.href='index.html'" class="back-button">返回主页</button>
+</div>
+
+<!-- 页面结构 -->
+<div class="mqtt-container">
+    <!-- 命令下发 -->
+    <div class="mqtt-command">
+        <h3>命令下发</h3>
+        <form id="mqttCommandForm">
+            <label for="topic">主题（Topic）：</label>
+            <input type="text" id="topic" placeholder="请输入主题">
+            <label for="payload">消息内容（Payload）：</label>
+            <textarea id="payload" placeholder="请输入消息内容"></textarea>
+            <button type="submit">发送命令</button>
+        </form>
+    </div>
+
+    <!-- 数据上报 -->
+    <div class="mqtt-data">
+        <h3>实时数据上报</h3>
+        <div id="mqttDataList">
+            <!-- 动态填充上报数据 -->
+            <p>等待接收数据...</p>
+        </div>
+    </div>
+</div>
+
+<script src="/js/mqtt.js"></script>
+</body>
+</html>

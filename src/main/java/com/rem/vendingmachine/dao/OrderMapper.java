@@ -19,4 +19,7 @@ public interface OrderMapper {
     int updateCompletionStatus(@Param("orderId") int orderId);
 
     List<Order> selectAllOrders();
+
+    List<Order> queryOrders(@Param("userId") int userId, @Param("status") int status, @Param("machineId") int machineId);
+
 }

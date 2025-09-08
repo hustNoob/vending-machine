@@ -5,8 +5,8 @@
 <mapper namespace="com.rem.vendingmachine.dao.ProductMapper">
 
     <insert id="insertProduct" parameterType="product">
-        insert into vending_machine.product(id, name, brand, price, stock, status, create_time)
-        VALUES (#{id},#{name},#{brand},#{price},#{stock},#{status},current_timestamp)
+        insert into vending_machine.product(name, price)
+        VALUES (#{name},#{price})
     </insert>
 
     <delete id="deleteProductById" parameterType="int">
@@ -16,11 +16,7 @@
     <update id="updateProduct" parameterType="product">
         UPDATE vending_machine.product
         SET name = #{name},
-            brand = #{brand},
-            price = #{price},
-            stock = #{stock},
-            status = #{status},
-            update_time = CURRENT_TIMESTAMP
+            price = #{price}
         WHERE id = #{id}
     </update>
 
@@ -32,10 +28,11 @@
         select * from vending_machine.product where id = #{id}
     </select>
 
+    <!--废案-->
     <select id="selectLowStockProduct" resultType="product">
-        select id, name, brand, price, stock, status, create_time, update_time
+        select *
         from vending_machine.product
-        where stock &lt; low_stock_threshold and status = 1
+        where stock &lt; 0 and status = 1
     </select>
 
     <update id="updateStock">
@@ -43,5 +40,9 @@
         set stock = product.stock + #{quantity}, update_time = current_timestamp
         where id=#{id}
     </update>
+
+    <select id="selectProductNameById" resultType="String">
+        SELECT name FROM product WHERE id = #{productId}
+    </select>
 
 </mapper>

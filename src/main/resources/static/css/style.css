@@ -1,54 +1,491 @@
-/* 通用样式 */
+/* ------------------ 全局样式 ------------------ */
 body {
+    margin: 0;
     font-family: Arial, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
+    background-color: #f9f9f9;
 }
 
-header {
-    background: #333;
-    color: #fff;
-    padding: 15px 10px;
-    text-align: center;
-}
-
-header h1 {
-    margin: 0;
-}
-
-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0 0;
+/* 包含页面容器，统一布局 */
+.container {
     display: flex;
-    justify-content: center;
+    height: 100vh;
+    width: 100%;
 }
 
-nav ul li {
-    margin: 0 10px;
-}
+/* ------------------ 首页样式 (index.html) ------------------ */
 
-nav ul li a {
-    color: #ffc107;
-    text-decoration: none;
-}
-
-main {
+/* 左侧导航栏 */
+.sidebar {
+    width: 25%; /* 左侧宽度分配 */
+    background-color: #f8f9fa; /* 浅灰背景 */
     padding: 20px;
-    text-align: center;
-    background: #fff;
-    border: 1px solid #ddd;
-    margin: 20px auto;
-    width: 80%;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    border-right: 1px solid #ddd;
+    text-align: center; /* 居中对齐 */
 }
 
-footer {
+.sidebar h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #343a40;
+}
+
+.sidebar select {
+    width: 90%; /* 更宽的选择框 */
+    padding: 8px;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.big-button {
+    display: block;
+    width: 90%;
+    margin: 10px auto;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #17a2b8; /* 蓝绿按钮 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
     text-align: center;
-    padding: 15px 0;
-    background: #333;
+}
+
+.big-button:hover {
+    background-color: #138496; /* 按钮悬停时的颜色 */
+}
+
+/* 商品列表区域 */
+.content {
+    flex: 1; /* 占据剩余空间 */
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.content h1 {
+    margin-bottom: 20px;
+    font-size: 22px;
+    color: #495057;
+}
+
+#products {
+    display: flex;
+    flex-wrap: wrap; /* 多行展示商品 */
+    gap: 10px;
+}
+
+.product {
+    width: 150px;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    transition: box-shadow 0.3s ease;
+}
+
+.product:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product button {
+    background-color: #007bff;
     color: #fff;
-    margin-top: 20px;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.product button:hover {
+    background-color: #0056b3;
+}
+
+/* 用户信息区域 */
+.info-panel {
+    width: 30%; /* 右侧宽度分配 */
+    background-color: #f8f9fa;
+    padding: 20px;
+    box-sizing: border-box;
+    border-left: 1px solid #ddd;
+}
+
+#orderList {
+    margin-top: 10px;
+    height: 300px;
+    overflow-y: auto; /* 垂直滚动条 */
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+/* ------------------ 返回主页按钮样式 ------------------ */
+
+/* 顶部按钮容器 */
+.header {
+    text-align: center;  /* 居中显示 */
+    margin: 20px 0; /* 增加按钮与页面内容的间距 */
+}
+
+.back-button {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 10px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}
+
+/* ------------------ 用户管理页面布局 ------------------ */
+
+/* 整体布局 */
+.user-container {
+    display: flex;
+    flex-direction: column; /* 上下排列 */
+    align-items: center; /* 垂直居中 */
+    justify-content: center; /* 水平居中 */
+    padding: 20px;
+    gap: 30px;
+}
+
+/* 卡片样式：新增用户与用户列表 */
+.user-form, .user-list {
+    max-width: 600px; /* 宽度限制 */
+    width: 80%; /* 自适应屏幕宽度 */
+    background-color: #ffffff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.user-form h2, .user-list h2 {
+    margin-top: 0;
+    color: #343a40;
+}
+
+/* 新增用户表单 */
+.user-form input {
+    width: calc(100% - 20px); /* 响应式宽度 */
+    padding: 10px;
+    margin-bottom: 10px; /* 输入框间距 */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.user-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745;
+    color: white;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.user-form button:hover {
+    background-color: #218838;
+}
+
+/* 表格样式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+table th, table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+table td button {
+    padding: 5px 10px;
+    border: none;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+table td button:hover {
+    background-color: #c82333;
+}
+
+
+/* ------------------ 商品管理页面布局 ------------------ */
+
+/* 主体布局：新增商品和商品列表部分 */
+.product-container {
+    display: flex; /* 使用 Flex 布局 */
+    flex-direction: column; /* 垂直排列 */
+    align-items: center; /* 水平居中 */
+    gap: 30px; /* 模块上下间距 */
+    padding: 20px;
+}
+
+.product-form, .product-list {
+    max-width: 700px; /* 设置合理宽度 */
+    width: 80%; /* 自适应屏幕宽度 */
+    background-color: #ffffff; /* 默认白色背景 */
+    padding: 20px;
+    border: 1px solid #ddd; /* 边框样式 */
+    border-radius: 8px; /* 边界圆角 */
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
+}
+
+.product-form h2, .product-list h2 {
+    margin-top: 0;
+    color: #343a40; /* 深灰色标题 */
+}
+
+/* 新增商品表单样式 */
+.product-form input {
+    width: calc(100% - 20px); /* 设置宽度 */
+    padding: 10px;
+    margin-bottom: 10px; /* 添加输入框之间的间距 */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.product-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745; /* 绿色按钮样式 */
+    color: white;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.product-form button:hover {
+    background-color: #218838; /* 鼠标悬停样式变化 */
+}
+
+/* 商品列表表格样式 */
+.product-list table {
+    width: 100%;
+    border-collapse: collapse; /* 表格无缝衔接 */
+    margin-top: 10px;
+}
+
+.product-list th, .product-list td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center; /* 文本居中显示 */
+}
+
+.product-list th {
+    background-color: #f8f9fa; /* 表头背景颜色 */
+    font-weight: bold; /* 加粗字体 */
+}
+
+.product-list td button {
+    padding: 5px 10px;
+    border: none;
+    background-color: #dc3545; /* 红色按钮 */
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.product-list td button:hover {
+    background-color: #c82333; /* 鼠标悬停按钮变暗 */
+}
+
+/* 售货机管理页面布局 */
+.vending-machine-container {
+    display: flex;
+    align-items: flex-start; /* 从顶部开始对齐 */
+    gap: 20px; /* 左右模块间距 */
+    padding: 20px;
+}
+
+/* 售货机样式 */
+.vending-machine-form {
+    width: 30%; /* 左侧宽度占比 */
+    margin-right: 20px; /* 与右侧模块保持距离 */
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.vending-machine-form h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.vending-machine-form input {
+    width: calc(100% - 20px);
+    margin: 10px 0; /* 增加输入框之间的间距 */
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.vending-machine-form button {
+    width: 100%;
+    background-color: #28a745;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.vending-machine-form button:hover {
+    background-color: #218838;
+}
+
+/* 售货机列表表格调整 */
+.vending-machine-list table {
+    width: 100%;
+    border-collapse: collapse; /* 表格边框无缝连接 */
+    margin-top: 10px;
+}
+
+.vending-machine-list th, .vending-machine-list td {
+    border: 1px solid #ddd; /* 表格灰色边框 */
+    text-align: center; /* 文本居中 */
+    padding: 8px; /* 单元格内边距 */
+}
+
+.vending-machine-list th {
+    background-color: #f8f9fa; /* 表头灰色背景 */
+    font-weight: bold; /* 加粗 */
+}
+
+/* 表格样式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    text-align: center;
+    padding: 8px;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+/* 订单管理页面布局 */
+.order-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    align-items: flex-start; /* 从顶部开始对齐 */
+}
+
+/* 筛选表单样式 */
+.order-filter {
+    width: 30%; /* 左侧筛选栏宽度 */
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.order-filter h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.order-filter label {
+    display: block;
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.order-filter input, .order-filter select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.order-filter button {
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.order-filter button:hover {
+    background-color: #0056b3;
+}
+
+/* 订单列表表格样式 */
+.order-list {
+    width: 65%; /* 右侧列表宽度 */
+    overflow-x: auto; /* 防止内容过长导致溢出 */
+}
+
+.order-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.order-list th, .order-list td {
+    border: 1px solid #ddd;
+    text-align: center;
+    padding: 8px;
+}
+
+/* 模态框背景 */
+.modal {
+    display: none; /* 默认隐藏 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* 模态框内容 */
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    width: 50%;
+    padding: 20px;
+    border-radius: 5px;
+    position: relative;
+}
+
+/* 关闭按钮样式 */
+.close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    color: black;
 }

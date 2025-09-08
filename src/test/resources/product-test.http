@@ -1,20 +1,20 @@
-POST http://localhost:8080/api/product/add
+PUT http://localhost:8080/api/product/update
 Content-Type: application/json
 
 {
-  "name": "Coca Cola",
-  "brand": "可口可乐",
-  "price": 3.50,
-  "stock": 5,
-  "status": 1
+  "id": 5,
+  "name": "天然矿泉水",
+  "price": 2.5
 }
+
 
 ###
 
 PUT http://localhost:8080/api/product/restock/1?quantity=20
 ###
 
-GET http://localhost:8080/api/product/low-stock
+GET http://localhost:8080/api/product/all
+
 
 ###
 

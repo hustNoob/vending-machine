@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>售货机管理</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<!-- 返回主页按钮 -->
+<div class="header">
+    <button onclick="window.location.href='index.html'" class="back-button">返回主页</button>
+</div>
+
+<!-- 售货机管理主体 -->
+<div class="vending-machine-container">
+    <!-- 左侧：添加售货机 -->
+    <div class="vending-machine-form">
+        <h3>新增售货机</h3>
+        <form id="vendingMachineCreateForm">
+            <input type="text" id="machineCode" placeholder="售货机编号">
+            <input type="number" id="machineStatus" placeholder="状态 (1-在线, 0-离线, 2-需要维护)">
+            <input type="number" step="0.1" id="temperature" placeholder="温度 (单位: ℃)">
+            <input type="text" id="locationDesc" placeholder="位置信息">
+            <button type="submit">添加</button>
+        </form>
+    </div>
+
+    <!-- 右侧：售货机列表与商品管理 -->
+    <div class="vending-machine-content">
+        <!-- 售货机列表 -->
+        <div class="vending-machine-list">
+            <h3>售货机列表</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>售货机编号</th>
+                    <th>状态</th>
+                    <th>温度</th>
+                    <th>位置</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="vendingMachineList">
+                <!-- 动态加载售货机数据 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 售货机商品管理 -->
+        <div class="vending-machine-product-list">
+            <h3>商品管理</h3>
+            <select id="selectMachine">
+                <option value="">选择售货机</option>
+            </select>
+            <table>
+                <thead>
+                <tr>
+                    <th>商品 ID</th>
+                    <th>商品名称</th>
+                    <th>价格</th>
+                    <th>库存</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="vendingMachineProductList">
+                <!-- 动态加载商品数据 -->
+                </tbody>
+            </table>
+            <h4>添加商品</h4>
+            <form id="addProductToMachineForm">
+                <input type="number" id="productId" placeholder="商品 ID">
+                <input type="number" id="productPrice" placeholder="价格 (单位: 元)">
+                <input type="number" id="productStock" placeholder="库存">
+                <button type="submit">添加商品</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/js/vending-machine.js"></script>
+</body>
+</html>

@@ -1,1 +1,9 @@
-POST http://localhost:8080/api/vending-machine/mqtt/command/1?command=CHANGE_TEMPERATURE
+### 测试 MQTT 发布
+POST http://localhost:8080/api/test-publish
+Content-Type: application/json
+
+{
+  "topic": "vendingmachine/command/test",
+  "payload": "{\"command\":\"CHANGE_TEMPERATURE\",\"value\":25}"
+}
+

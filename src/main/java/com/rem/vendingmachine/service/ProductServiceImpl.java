@@ -38,6 +38,8 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.selectProductById(id);
     }
 
+
+    //下面两个暂时不用
     @Override
     public List<Product> getLowStockProducts() {
         return productMapper.selectLowStockProduct();

@@ -2,98 +2,122 @@ package com.rem.vendingmachine.mqtt;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rem.vendingmachine.dao.VendingMachineMapper;
-import com.rem.vendingmachine.model.VendingMachine;
-import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+import com.rem.vendingmachine.service.OrderService;
+import com.rem.vendingmachine.service.VendingMachineService;
 import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 public class MqttSubscriberService {
 
     @Autowired
-    private MqttClient mqttClient;
+    private MqttClient mqttClient;  // 服务端 MQTT 客户端
 
     @Autowired
-    private VendingMachineMapper vendingMachineMapper;
+    private VendingMachineService vendingMachineService;
+
+    @Autowired
+    private OrderService orderService;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 订阅指定主题并处理消息
-     * @param topic 主题
+     * 订阅指定主题
+     * @param topic 待订阅的主题
      */
     public void subscribe(String topic) {
         try {
-            mqttClient.subscribe(topic, (receivedTopic, message) -> {
-                String payload = new String(message.getPayload());
-                System.out.println("收到来自主题[" + receivedTopic + "]的消息：" + payload);
-
-                // 模拟处理收到的命令
-                if (receivedTopic.startsWith("vendingmachine/command")) {
-                    String machineId = getMachineIdFromTopic(receivedTopic);
-                    handleDeviceCommand(Integer.parseInt(machineId), payload);
-                }
-            });
-            System.out.println("已订阅主题：" + topic);
+            mqttClient.subscribe(topic, (receivedTopic, message) -> handleMessage(receivedTopic, message));
+            System.out.println("成功订阅主题：" + topic);
         } catch (Exception e) {
-            System.err.println("订阅失败：" + e.getMessage());
+            System.err.println("订阅主题失败：" + topic + "，错误：" + e.getMessage());
         }
     }
 
-    private String getMachineIdFromTopic(String topic) {
-        String[] parts = topic.split("/");
-        return parts[parts.length - 1]; // 假定格式为 vendingmachine/command/{machineId}
-    }
-
-    private void handleDeviceCommand(int machineId, String messagePayload) {
+    /**
+     * 处理收到的消息，根据主题路由到不同方法
+     * @param topic   消息的主题
+     * @param message 消息对象
+     */
+    private void handleMessage(String topic, MqttMessage message) {
         try {
-            // 解析 JSON 消息内容
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonNode = objectMapper.readTree(messagePayload);
-            String command = jsonNode.get("command").asText(); // 提取命令
-            long timestamp = jsonNode.get("timestamp").asLong(); // 提取时间戳（如果需要）
+            String payload = new String(message.getPayload()); // 解码消息内容
+            System.out.println("收到消息 - 主题: " + topic + ", 内容: " + payload);
 
-            // 查询目标售货机
-            VendingMachine machine = vendingMachineMapper.selectVendingMachineById(machineId);
-
-            if (machine == null) {
-                System.out.println("设备ID：" + machineId + " 未找到！");
-                return;
+            // 根据主题类型处理
+            if (topic.startsWith("vendingmachine/heartbeat")) {
+                handleHeartbeat(topic);
+            } else if (topic.startsWith("vendingmachine/state")) {
+                handleState(payload);
+            } else if (topic.startsWith("vendingmachine/order")) {
+                handleOrder(payload);
+            } else {
+                System.err.println("未知主题消息：" + topic);
             }
-
-            // 执行设备命令
-            System.out.println("执行命令：" + command);
-            machine.applyCommand(command); // 假设 applyCommand 能正确处理命令
-
-            // 更新数据库（如设备状态/温度变化等）
-            vendingMachineMapper.updateVendingMachine(machine);
-
-            // 模拟设备状态上报
-            String stateTopic = "vendingmachine/state/" + machineId;
-            String statePayload = String.format(
-                    "{\"status\":%d,\"temperature\":%.1f,\"location\":\"%s\"}",
-                    machine.getStatus(),
-                    machine.getTemperature(),
-                    machine.getLocationDesc()
-            );
-            publish(stateTopic, statePayload);
         } catch (Exception e) {
-            System.err.println("处理设备命令时发生错误：" + e.getMessage());
+            System.err.println("处理消息时发生错误：" + e.getMessage());
         }
     }
 
-
-    // 发布消息（如设备模拟状态上报）
-    public void publish(String topic, String payload) {
+    /**
+     * 处理心跳消息，更新设备状态
+     */
+    private void handleHeartbeat(String topic) {
         try {
-            MqttMessage message = new MqttMessage(payload.getBytes());
-            message.setQos(1); // 至少一次
-            mqttClient.publish(topic, message);
-            System.out.println("消息发布成功，主题：" + topic + ", 内容：" + payload);
-        } catch (MqttException e) {
-            System.err.println("消息发布失败：" + e.getMessage());
+            // 从主题中提取 machineId
+            String[] topicParts = topic.split("/");
+            int machineId = Integer.parseInt(topicParts[2]);
+
+            // 更新数据库中的 lastUpdateTime
+            vendingMachineService.updateLastUpdateTime(machineId, LocalDateTime.now());
+            System.out.println("更新心跳 - 设备ID: " + machineId + ", 时间: " + LocalDateTime.now());
+        } catch (Exception e) {
+            System.err.println("处理心跳消息失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 处理状态消息，更新设备运行状态
+     */
+    private void handleState(String payload) {
+        try {
+            // 解析 JSON 消息
+            JsonNode root = objectMapper.readTree(payload);
+
+            int machineId = root.get("machineId").asInt();
+            double temperature = root.get("temperature").asDouble();
+            int status = root.get("status").asInt();
+
+            // 更新售货机状态到数据库
+            vendingMachineService.updateVendingMachineStatus(machineId, temperature, status);
+            System.out.println("更新状态 - 设备ID: " + machineId + ", 温度: " + temperature + ", 状态: " + status);
+        } catch (Exception e) {
+            System.err.println("处理状态消息失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 处理订单消息，创建订单并更新库存
+     */
+    private void handleOrder(String payload) {
+        try {
+            // 解析 JSON 消息
+            JsonNode root = objectMapper.readTree(payload);
+
+            String orderId = root.get("orderId").asText();
+            int userId = root.get("userId").asInt();
+            int vendingMachineId = root.get("machineId").asInt();
+            double totalPrice = root.get("totalPrice").asDouble();
+
+            // 调用服务创建订单
+            orderService.createOrderFromMachine(vendingMachineId, userId, orderId, totalPrice);
+            System.out.println("订单已成功处理 - 订单ID: " + orderId);
+        } catch (Exception e) {
+            System.err.println("处理订单消息失败：" + e.getMessage());
         }
     }
 }

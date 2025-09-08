@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rem.vendingmachine.dao.VendingMachineProductMapper">
+
+    <!-- 插入商品到某台售货机 -->
+    <insert id="insertVendingMachineProduct" parameterType="vendingMachineProduct">
+        INSERT INTO vending_machine_product (vending_machine_id, product_id, stock, price, product_name)
+        VALUES (#{vendingMachineId}, #{productId}, #{stock}, #{price}, #{product_name});
+    </insert>
+
+    <!-- 删除某台售货机中的某商品记录 -->
+    <delete id="deleteVendingMachineProduct">
+        DELETE FROM vending_machine_product
+        WHERE vending_machine_id = #{vendingMachineId} AND product_id = #{productId};
+    </delete>
+
+    <!-- 更新某台售货机中某商品的库存 -->
+    <update id="updateVendingMachineProductStock">
+        UPDATE vending_machine_product
+        SET stock = #{stock}
+        WHERE vending_machine_id = #{vendingMachineId} AND product_id = #{productId};
+    </update>
+
+    <!-- 查询某台售货机中的所有商品 -->
+    <select id="selectProductsByVendingMachineId" parameterType="int" resultType="vendingMachineProduct">
+        SELECT
+            vmp.vending_machine_id AS vendingMachineId,
+            p.id AS productId,
+            p.name AS productName,
+            p.price AS price,
+            vmp.stock AS stock
+        FROM vending_machine_product vmp
+                 JOIN product p ON vmp.product_id = p.id
+        WHERE vmp.vending_machine_id = #{vendingMachineId};
+    </select>
+
+
+    <!-- 查询某台售货机中某商品信息 -->
+    <select id="selectVendingMachineProduct" parameterType="map" resultType="VendingMachineProduct">
+        SELECT *
+        FROM vending_machine_product
+        WHERE vending_machine_id = #{vendingMachineId} AND product_id = #{productId};
+    </select>
+
+</mapper>

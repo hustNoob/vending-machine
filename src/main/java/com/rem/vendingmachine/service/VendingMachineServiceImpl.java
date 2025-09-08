@@ -5,6 +5,7 @@ import com.rem.vendingmachine.model.VendingMachine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -41,5 +42,24 @@ public class VendingMachineServiceImpl implements VendingMachineService {
     @Override
     public List<VendingMachine> getVendingMachinesByStatus(int status) {
         return vendingMachineMapper.selectVendingMachinesByStatus(status);
+    }
+
+
+    //for mqtt
+    public void updateLastUpdateTime(int machineId, LocalDateTime lastUpdateTime) {
+        VendingMachine machine = vendingMachineMapper.selectVendingMachineById(machineId);
+        if (machine != null) {
+            machine.setUpdateTime(lastUpdateTime);
+            vendingMachineMapper.updateVendingMachine(machine);
+        }
+    }
+
+    public void updateVendingMachineStatus(int machineId, double temperature, int status) {
+        VendingMachine machine = vendingMachineMapper.selectVendingMachineById(machineId);
+        if (machine != null) {
+            machine.setTemperature(temperature);
+            machine.setStatus(status);
+            vendingMachineMapper.updateVendingMachine(machine);
+        }
     }
 }

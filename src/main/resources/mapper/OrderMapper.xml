@@ -11,11 +11,35 @@
     </insert>
 
     <!-- 根据订单 ID 查询订单 -->
-    <select id="selectOrderById" parameterType="int" resultType="order">
-        SELECT *
-        FROM order_table
-        WHERE id = #{id}
+    <!-- 查询订单详情，并加载商品清单 -->
+    <select id="selectOrderById" resultMap="OrderWithItemsResultMap">
+        SELECT o.id AS order_id, o.user_id, o.total_price, o.create_time,
+               o.payment_time, o.completion_time,
+               oi.id AS item_id, oi.order_id, oi.product_id, oi.quantity,
+               oi.price, oi.subtotal
+        FROM order_table AS o
+                 LEFT JOIN order_item AS oi ON o.id = oi.order_id
+        WHERE o.id = #{id}
     </select>
+
+    <!-- 结果映射 -->
+    <resultMap id="OrderWithItemsResultMap" type="Order">
+        <id property="id" column="order_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="totalPrice" column="total_price"/>
+        <result property="createTime" column="create_time"/>
+        <result property="paymentTime" column="payment_time"/>
+        <result property="completionTime" column="completion_time"/>
+        <collection property="orderItems" ofType="OrderItem">
+            <id property="id" column="item_id"/>
+            <result property="orderId" column="order_id"/>
+            <result property="productId" column="product_id"/>
+            <result property="quantity" column="quantity"/>
+            <result property="price" column="price"/>
+            <result property="subtotal" column="subtotal"/>
+        </collection>
+    </resultMap>
+
 
     <!-- 根据用户 ID 查询订单历史 -->
     <select id="selectOrdersByUserId" parameterType="int" resultType="order">
@@ -44,5 +68,17 @@
         from order_table
     </select>
 
+    <select id="queryOrders" resultType="Order">
+        SELECT * FROM orders WHERE 1=1
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="machineId != null">
+            AND machine_id = #{machineId}
+        </if>
+    </select>
 
 </mapper>

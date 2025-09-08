@@ -31,4 +31,9 @@ public interface OrderService {
     //查询全部订单
     List<Order> getAllOrders();
 
+
+    public void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice);
+
+    public List<Order> queryOrders(Integer userId, Integer status, Integer machineId);
+
 }

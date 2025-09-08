@@ -1,9 +1,16 @@
 package com.rem.vendingmachine.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Order {
     private int id; // 订单主键
     private int userId; // 用户ID
@@ -19,71 +26,5 @@ public class Order {
 
     public boolean isCompleted() {
         return completionTime != null;
-    }
-
-    public LocalDateTime getCompletionTime() {
-        return completionTime;
-    }
-
-    public void setCompletionTime(LocalDateTime completionTime) {
-        this.completionTime = completionTime;
-    }
-
-    public LocalDateTime getPaymentTime() {
-        return paymentTime;
-    }
-
-    public void setPaymentTime(LocalDateTime paymentTime) {
-        this.paymentTime = paymentTime;
-    }
-
-    public List<OrderItem> getOrderItems() {
-        return orderItems;
-    }
-
-    public void setOrderItems(List<OrderItem> orderItems) {
-        this.orderItems = orderItems;
-    }
-
-    public Order() {}
-
-    public Order(int id, int userId, BigDecimal totalPrice, LocalDateTime createTime, List<OrderItem> orderItems) {
-        this.id = id;
-        this.userId = userId;
-        this.totalPrice = totalPrice;
-        this.createTime = createTime;
-        this.orderItems = orderItems;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getUserId() {
-        return userId;
-    }
-
-    public void setUserId(int userId) {
-        this.userId = userId;
-    }
-
-    public BigDecimal getTotalPrice() {
-        return totalPrice;
-    }
-
-    public void setTotalPrice(BigDecimal totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
     }
 }

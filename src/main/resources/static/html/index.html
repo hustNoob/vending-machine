@@ -4,27 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>无人售货机管理系统</title>
-    <link rel="stylesheet" type="text/css" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<header>
-    <h1>无人售货机管理系统</h1>
-    <nav>
-        <ul>
-            <li><a href="/html/products.html">商品管理</a></li>
-            <li><a href="/html/orders.html">订单管理</a></li>
-            <li><a href="/html/users.html">用户管理</a></li>
-            <li><a href="/html/machines.html">售货机管理</a></li>
-            <li><a href="/html/buy.html">买商品</a></li>
-        </ul>
-    </nav>
-</header>
-<main>
-    <h2>欢迎使用无人售货机管理系统</h2>
-    <p>点击上方导航栏开始操作</p>
-</main>
-<footer>
-    <p>&copy;无人售货机管理系统</p>
-</footer>
+<!-- 页面容器 -->
+<div class="container">
+    <!-- 左侧导航栏 -->
+    <aside class="sidebar">
+        <h2>切换用户</h2>
+        <select id="userSelect"></select>
+        <h2>售货机</h2>
+        <select id="machineSelect"></select>
+        <hr>
+        <button onclick="window.location.href='user.html'" class="big-button">用户管理</button>
+        <button onclick="window.location.href='product.html'" class="big-button">商品管理</button>
+        <button onclick="window.location.href='order.html'" class="big-button">订单管理</button>
+        <button onclick="window.location.href='mqtt.html'" class="big-button">MQTT 控制</button>
+        <button onclick="window.location.href='vending-machine.html'" class="big-button">售货机管理</button>
+    </aside>
+
+    <!-- 中间商品展示区域 -->
+    <main class="content">
+        <h1>商品列表</h1>
+        <div id="products">
+            <!-- 商品列表将通过 JS 动态填充 -->
+        </div>
+    </main>
+
+    <!-- 右侧用户信息和订单区域 -->
+    <aside class="info-panel">
+        <h2>用户信息</h2>
+        <p id="userInfo">余额: <span id="userBalance">0</span></p>
+        <h2>历史订单</h2>
+        <div id="orderList">
+            <!-- 用户订单列表将通过 JS 动态填充 -->
+        </div>
+    </aside>
+</div>
+
+<script src="/js/script.js"></script>
 </body>
 </html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<!-- 顶部返回主页按钮 -->
+<div class="header">
+    <button onclick="window.location.href='index.html'" class="back-button">返回主页</button>
+</div>
+
+<!-- 主体内容 -->
+<div class="user-container">
+    <!-- 新增用户部分 -->
+    <div class="user-form">
+        <h2>新增用户</h2>
+        <form id="userCreateForm">
+            <input type="text" id="newUsername" placeholder="用户名">
+            <input type="password" id="newPassword" placeholder="密码">
+            <button type="submit">添加用户</button>
+        </form>
+    </div>
+
+    <!-- 用户列表部分 -->
+    <div class="user-list">
+        <h2>用户列表</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>余额</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="userList">
+            <!-- 用户数据通过 JS 动态添加 -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/js/user.js"></script>
+</body>
+</html>

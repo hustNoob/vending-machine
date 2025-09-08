@@ -45,4 +45,11 @@
         WHERE status = #{status}
     </select>
 
+    <update id="updateLastUpdateTime" parameterType="map">
+        UPDATE vending_machine
+        SET update_time = #{lastUpdateTime}
+        WHERE id = #{id};
+    </update>
+
+
 </mapper>

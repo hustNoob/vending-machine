@@ -83,6 +83,8 @@ public class ProductController {
         return product;
     }
 
+
+    //下面二者暂时不用
     /**
      * 查询库存不足的商品接口
      * @return 库存不足的商品查询结果

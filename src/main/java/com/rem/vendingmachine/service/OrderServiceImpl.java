@@ -83,20 +83,23 @@ public class OrderServiceImpl implements OrderService {
     //查询账单所有详细信息
     @Override
     public Order getOrderWithDetailsById(int orderId) {
-        // 1. 查询订单主表信息
         Order order = orderMapper.selectOrderById(orderId);
-        if (order == null) {
-            throw new RuntimeException("Order not found for ID: " + orderId);
+
+        if (order != null) {
+            List<OrderItem> items = order.getOrderItems();
+            if (items != null) { // 判空处理
+                for (OrderItem item : items) {
+                    // 查询并注入商品名称
+                    String productName = productMapper.selectProductNameById(item.getProductId());
+                    item.setProductName(productName);
+                }
+            } else {
+                order.setOrderItems(new ArrayList<>()); // 如果为空，则初始化空列表
+            }
         }
-
-        // 2. 查询订单商品清单
-        List<OrderItem> orderItems = orderItemMapper.selectOrderItemsByOrderId(orderId);
-
-        // 3. 将商品清单存放到订单对象中（需要扩展 Order 类中加入商品清单列表）
-        order.setOrderItems(orderItems);
-
         return order;
     }
+
 
     //根据用户查询账单信息
     @Override
@@ -175,5 +178,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> getAllOrders() {
         return orderMapper.selectAllOrders();
+    }
+
+    @Override
+    public void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice) {
+    }
+
+    public List<Order> queryOrders(Integer userId, Integer status, Integer machineId) {
+        return orderMapper.queryOrders(userId, status, machineId);
     }
 }

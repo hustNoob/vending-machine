@@ -10,22 +10,38 @@ import org.springframework.stereotype.Service;
 public class MqttPublisherService {
 
     @Autowired
-    private MqttClient mqttClient;
+    private MqttClient mqttClient; // 注入配置的服务端 MQTT 客户端
 
     /**
-     * 发布消息到指定主题
-     * @param topic 主题
+     * 基于指定主题发布消息（自定义 QoS）
+     *
+     * @param topic   发布的主题
      * @param payload 消息内容
+     * @param qos     服务质量等级（0, 1, 2）
      */
-    public void publish(String topic, String payload) {
+    public void publish(String topic, String payload, int qos) {
         try {
-            MqttMessage message = new MqttMessage(payload.getBytes());//消息内容
-            message.setQos(1); //消息，1，至少一次
-            mqttClient.publish(topic, message); //有异常抛出，可能发布不成功
-            System.out.println("消息发布成功，topic为" + topic);
+            // 将消息内容封装为 MQTT 消息对象
+            MqttMessage message = new MqttMessage(payload.getBytes());
+            message.setQos(qos); // 设置 QoS 等级
+            mqttClient.publish(topic, message); // 发布消息到指定主题
+
+            // 成功日志
+            System.out.println("消息发布成功 - 主题: " + topic + ", 内容: " + payload);
         } catch (MqttException e) {
-            System.err.println("消息发布失败："+e.getMessage());
+            // 异常日志
+            System.err.println("消息发布失败 - 主题: " + topic + ", 错误: " + e.getMessage());
+            throw new RuntimeException("MQTT 消息发布失败", e); // 向上抛出异常（可选，根据业务需求）
         }
     }
 
+    /**
+     * 基于指定主题发布消息（默认 QoS = 1）
+     *
+     * @param topic   发布的主题
+     * @param payload 消息内容
+     */
+    public void publish(String topic, String payload) {
+        publish(topic, payload, 1); // 调用主方法，默认 QoS 为 1（至少一次传送）
+    }
 }
