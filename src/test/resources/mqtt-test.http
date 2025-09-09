@@ -1,9 +1,17 @@
-### 测试 MQTT 发布
+### 1. 发布测试消息（等价于你的 curl）
 POST http://localhost:8080/api/test-publish
 Content-Type: application/json
 
 {
-  "topic": "vendingmachine/command/1",
-  "payload": "{\"command\": \"SET_STATUS\", \"value\": 1}"
+  "topic": "test/topic",
+  "payload": "{\"message\":\"hello\"}"
 }
 
+### 2. 再发一条别的消息（可选）
+POST http://localhost:8080/api/test-publish
+Content-Type: application/json
+
+{
+  "topic": "demo/alert",
+  "payload": "{\"temp\":42,\"unit\":\"°C\"}"
+}

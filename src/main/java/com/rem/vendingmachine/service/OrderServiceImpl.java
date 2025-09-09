@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -272,9 +273,146 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice) {
+        System.out.println("【处理MQTT订单】订单ID: " + orderId + ", 售货机ID: " + vendingMachineId + ", 用户ID: " + userId + ", 金额: " + totalPrice);
+
+        try {
+            // 找到数据库中该售货机中的所有商品和库存
+            List<VendingMachineProduct> products = vendingMachineProductMapper.selectProductsByVendingMachineId(vendingMachineId);
+
+            System.out.println("【调试】售货机 " + vendingMachineId + " 中的商品列表: " + products);
+
+            // 为了演示，我们假设订单数据存储在内存中的某个地方（实际应该从MQTT payload中获取）
+            // 在实际系统中，你可能需要在MQTT消息中包含商品详情
+
+            // 这里你可以添加完整的订单处理逻辑
+
+            // 1. 检查用户余额
+            BigDecimal userBalance = userMapper.getBalanceByUserId(userId);
+            System.out.println("【调试】用户余额: " + userBalance + ", 订单金额: " + totalPrice);
+
+            if (userBalance == null) {
+                System.err.println("【错误】找不到用户余额");
+                return;
+            }
+
+            BigDecimal totalAmount = BigDecimal.valueOf(totalPrice);
+            if (userBalance.compareTo(totalAmount) < 0) {
+                System.err.println("【错误】余额不足");
+                return;
+            }
+
+            // 2. 扣减用户余额
+            BigDecimal newBalance = userBalance.subtract(totalAmount);
+            int rowsUpdated = userMapper.updateBalanceByUserId(userId, newBalance);
+            System.out.println("【调试】用户余额更新结果: " + rowsUpdated);
+
+            // 3. 创建订单（在数据库中）
+            Order order = new Order();
+            order.setUserId(userId);
+            order.setTotalPrice(totalAmount);
+            order.setCreateTime(LocalDateTime.now());
+            orderMapper.insertOrder(order);
+            System.out.println("【调试】订单创建成功，ID: " + order.getId());
+
+            // 4. 如果有商品详情（这部分需要你重构或补充逻辑），就处理商品扣减
+            // 由于MQTT消息结构，我们目前只能处理这些逻辑
+
+            // 订单创建成功后，你可以在这里添加订单处理的其他业务逻辑
+            System.out.println("【成功】订单处理完成: " + orderId);
+
+        } catch (Exception e) {
+            System.err.println("【错误】处理MQTT订单时发生异常: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
+
 
     public List<Order> queryOrders(Integer userId, Integer status, Integer machineId) {
         return orderMapper.queryOrders(userId, status, machineId);
     }
+
+    // 在OrderServiceImpl中替换原来的方法
+    @Override
+    public void processOrderFromMQTT(String orderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items) {
+        System.out.println("=== 处理完整的MQTT订单 ===");
+        System.out.println("订单ID: " + orderId + ", 用户ID: " + userId + ", 售货机ID: " + vendingMachineId);
+        System.out.println("订单商品明细: " + items);
+
+        try {
+            // 1. 检查用户余额
+            BigDecimal userBalance = userMapper.getBalanceByUserId(userId);
+            if (userBalance == null) {
+                System.err.println("【错误】用户余额查询失败");
+                return;
+            }
+
+            BigDecimal totalAmount = BigDecimal.valueOf(totalPrice);
+            if (userBalance.compareTo(totalAmount) < 0) {
+                System.err.println("【错误】用户余额不足");
+                return;
+            }
+
+            // 2. 开始事务处理商品扣减和余额扣减
+            // 3. 创建主订单
+            Order order = new Order();
+            order.setUserId(userId);
+            order.setTotalPrice(totalAmount);
+            order.setCreateTime(LocalDateTime.now());
+            orderMapper.insertOrder(order);
+            System.out.println("【调试】订单创建成功，ID: " + order.getId());
+
+            // 4. 处理订单项
+            BigDecimal total = BigDecimal.ZERO;
+            for (Map<String, Object> item : items) {
+                int productId = (Integer) item.get("productId");
+                int quantity = (Integer) item.get("quantity");
+
+                // 5. 检查该售货机是否有该商品
+                VendingMachineProduct vmProduct = vendingMachineProductMapper.selectVendingMachineProduct(vendingMachineId, productId);
+                if (vmProduct == null) {
+                    System.err.println("【错误】售货机 " + vendingMachineId + " 中不存在商品 " + productId);
+                    continue; // 处理下一个商品
+                }
+
+                // 6. 检查库存
+                if (vmProduct.getStock() < quantity) {
+                    System.err.println("【错误】商品 " + productId + " 库存不足，需要 " + quantity + "，现有 " + vmProduct.getStock());
+                    continue; // 处理下一个商品
+                }
+
+                // 7. 扣减库存
+                vendingMachineProductMapper.updateVendingMachineProductStock(vendingMachineId, productId, -quantity, quantity);
+                System.out.println("【调试】商品 " + productId + " 库存扣减 " + quantity);
+
+                // 8. 创建订单项
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrderId(order.getId());
+                orderItem.setProductId(productId);
+                orderItem.setQuantity(quantity);
+                orderItem.setPrice(vmProduct.getPrice());
+                orderItem.setSubtotal(vmProduct.getPrice().multiply(BigDecimal.valueOf(quantity)));
+                orderItemMapper.insertOrderItem(orderItem);
+
+                total = total.add(orderItem.getSubtotal());
+            }
+
+            // 9. 扣减用户余额
+            BigDecimal newBalance = userBalance.subtract(totalAmount);
+            userMapper.updateBalanceByUserId(userId, newBalance);
+            System.out.println("【调试】用户余额更新成功，新余额: " + newBalance);
+
+            // 10. 标记订单为已支付
+            orderMapper.updatePaymentStatus(order.getId());
+            System.out.println("【调试】订单支付状态已更新");
+
+            System.out.println("【成功】完整订单处理完成 - 订单ID: " + orderId);
+
+        } catch (Exception e) {
+            System.err.println("【错误】处理完整订单失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+
 }

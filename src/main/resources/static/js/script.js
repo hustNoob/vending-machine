@@ -215,12 +215,19 @@ function removeFromCart(productId) {
     updateCart();
 }
 
-// 执行结账流程
+// 执行结账流程 - 增强版
+// 替换原来的checkout()方法
 function checkout() {
-    const userId = parseInt(document.getElementById('userSelect').value, 10); // 获取并转换为数字
+    const userId = parseInt(document.getElementById('userSelect').value, 10);
+    const machineId = document.getElementById('machineSelect').value;
 
     if (!userId || userId <= 0) {
         alert("请先选择用户！");
+        return;
+    }
+
+    if (!machineId) {
+        alert("请先选择售货机！");
         return;
     }
 
@@ -229,38 +236,58 @@ function checkout() {
         return;
     }
 
-    // 组织购物车结算数据，确保包含 vendingMachineId
-    const order = cart.map(item => ({
+    // 生成订单ID
+    const orderId = "ORDER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+
+    // 构造订单数据（现在包含商品详情）
+    const orderItems = cart.map(item => ({
         productId: item.productId,
-        vendingMachineId: item.vendingMachineId, // 添加售货机ID
+        vendingMachineId: item.vendingMachineId,
         quantity: item.quantity
     }));
 
-    // 调试日志
-    console.log("准备付款的购物车订单：", { userId, order });
+    const orderPayload = {
+        orderId: orderId,
+        userId: userId,
+        machineId: machineId,
+        totalPrice: cart.reduce((sum, item) => sum + (item.quantity * item.price), 0),
+        items: orderItems // 添加商品详情
+    };
 
-    // 发送请求到后端
-    fetch(`/api/order/checkout`, {
+    console.log("准备发送订单数据:", orderPayload);
+
+    // 通过后端发送MQTT订单消息
+    const publishData = {
+        topic: "vendingmachine/order/" + orderId,
+        payload: JSON.stringify(orderPayload)
+    };
+
+    console.log("准备发送到MQTT的完整数据:", publishData);
+
+    fetch('/api/test-publish', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, order }) // 正确发送包含 vendingMachineId 的请求体
+        body: JSON.stringify(publishData)
     })
-        .then(response => {
-            // 更加健壮的响应处理
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(text || "支付请求失败"); });
-            }
-            return response.text(); // 如果是成功的文本响应
-        })
+        .then(response => response.text())
         .then(message => {
-            alert(message); // 提示用户支付结果
-            cart = []; // 清空购物车
-            updateCart(); // 更新购物车UI
-            loadProducts(); // 更新商品库存
-            loadUserInfo(); // 更新用户余额等信息
+            console.log("后端响应内容:", message);
+            alert("订单已提交，正在处理中...");
+            console.log("MQTT订单发送成功:", message);
+
+            // 清空购物车
+            cart = [];
+            updateCart();
+
+            // 重新加载商品和用户信息
+            loadProducts();
+            loadUserInfo();
+
+            console.log("订单已通过MQTT上报:", orderPayload);
         })
         .catch(error => {
-            console.error("支付错误：", error);
-            alert("支付失败，请稍后重试！\n错误详情: " + error.message); // 显示更详细的错误
+            console.error("发送MQTT订单消息失败：", error);
+            alert("订单提交失败，请重试！");
         });
 }
+

@@ -31,9 +31,16 @@ public class MqttConfig {
     @Bean
     public MqttClient mqttServerClient(MqttConnectOptions options) throws MqttException {
         String clientId = CLIENT_ID_PREFIX + "Server";
-        MqttClient client = new MqttClient(BROKER_URL, clientId, new MemoryPersistence()); // 使用内存持久化
-        client.connect(options);
-        System.out.println("服务端 MQTT 客户端连接成功，ClientID: " + clientId);
+        System.out.println("正在连接MQTT Broker: " + BROKER_URL + ", ClientID: " + clientId);
+        MqttClient client = new MqttClient(BROKER_URL, clientId, new MemoryPersistence());
+        try {
+            client.connect(options);
+            System.out.println("服务端 MQTT 客户端连接成功，ClientID: " + clientId);
+        } catch (MqttException e) {
+            System.err.println("服务端 MQTT 客户端连接失败，ClientID: " + clientId);
+            e.printStackTrace();
+            throw e;
+        }
         return client;
     }
 }

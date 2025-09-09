@@ -73,19 +73,18 @@ function sendMqttCommand(topic, payload) {
 // --- 命令处理结束 ---
 
 
-// --- 实时数据更新 (轮询) ---
+// 修改 startRealtimeUpdates 函数，添加更完整的订单更新处理
 function startRealtimeUpdates() {
     const interval = 2000; // 每2秒轮询一次
     setInterval(() => {
-        // 现在我们并行获取设备快照和订单
+        // 并行获取设备快照和订单
         Promise.all([
-            fetch('/api/mqtt/devices').then(res => res.json()), // 获取设备快照
-            fetch('/api/mqtt/data?type=order').then(res => res.json()) // 获取订单
+            fetch('/api/mqtt/devices').then(res => res.json()),
+            fetch('/api/mqtt/data?type=order').then(res => res.json())
         ])
             .then(([devices, orders]) => {
-                updateDeviceList(devices); // 更新设备列表
-                updateOrderLogs(orders);  // 更新订单列表
-                // 注意：不再需要单独处理心跳和状态日志的显示了
+                updateDeviceList(devices);
+                updateOrderLogs(orders);
             })
             .catch(error => {
                 console.error("轮询获取 MQTT 数据失败:", error);
@@ -104,6 +103,7 @@ function getStatusText(code) {
 }
 
 
+// 在 updateOrderLogs 函数中做一些优化
 let lastProcessedOrderTimestamp = 0;
 function updateOrderLogs(logs) {
     // 过滤出新的订单
@@ -123,7 +123,12 @@ function updateOrderLogs(logs) {
     // 生成新行并追加
     const newRowsHtml = newLogs.map(log => {
         let payload = {};
-        try { payload = JSON.parse(log.payload); } catch (e) { console.error("解析订单日志失败:", e); }
+        try {
+            payload = JSON.parse(log.payload);
+        } catch (e) {
+            console.error("解析订单日志失败:", e);
+            payload = { orderId: '解析失败', userId: 'N/A', totalPrice: 'N/A' };
+        }
         return `
             <tr>
                 <td>${payload.orderId || 'N/A'}</td>

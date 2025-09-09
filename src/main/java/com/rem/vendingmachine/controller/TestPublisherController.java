@@ -25,6 +25,11 @@ public class TestPublisherController {
         String topic = body.get("topic");
         String payload = body.get("payload");
 
+        System.out.println("=== TestPublisherController ===");
+        System.out.println("收到发布请求 - topic: " + topic);
+        System.out.println("收到发布请求 - payload: " + payload);
+        System.out.println("==============================");
+
         // 参数校验
         if (topic == null || topic.isEmpty()) {
             throw new RuntimeException("参数缺失：topic");
@@ -33,8 +38,15 @@ public class TestPublisherController {
             throw new RuntimeException("参数缺失：payload");
         }
 
-        // 发布 MQTT 消息
-        mqttPublisherService.publish(topic, payload); // 默认 QoS=1
-        return "发布成功 - 主题: " + topic + ", 内容: " + payload;
+        try {
+            // 发布 MQTT 消息
+            mqttPublisherService.publish(topic, payload); // 默认 QoS=1
+            System.out.println("MQTT消息发布成功 - 主题: " + topic + ", 内容: " + payload);
+            return "发布成功 - 主题: " + topic + ", 内容: " + payload;
+        } catch (Exception e) {
+            System.err.println("MQTT消息发布失败 - 主题: " + topic + ", 错误: " + e.getMessage());
+            e.printStackTrace();
+            return "发布失败 - 主题: " + topic + ", 错误: " + e.getMessage();
+        }
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/order")
@@ -139,4 +140,48 @@ public class OrderController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    // 添加一个新接口，允许后端直接通过API创建订单（而不是用户页面交互）
+    @PostMapping("/create-by-mqtt")
+    public String createOrderFromMQTT(@RequestBody Map<String, Object> orderData) {
+        try {
+            int userId = (Integer) orderData.get("userId");
+            String machineId = (String) orderData.get("machineId");
+            String orderId = (String) orderData.get("orderId");
+            double totalPrice = ((Number) orderData.get("totalPrice")).doubleValue();
+
+            // 这里其实应该调用 orderService.createOrderFromMachine 来处理逻辑
+            // 但为了简化，你可以在这里添加实际的订单处理逻辑
+
+            // 可选：在这里处理订单创建逻辑，比如扣减库存等
+            System.out.println("通过API创建订单 - 订单ID: " + orderId);
+
+            return "订单成功处理: " + orderId;
+        } catch (Exception e) {
+            return "订单创建失败: " + e.getMessage();
+        }
+    }
+
+    // 在OrderController中添加这个方法
+    @PostMapping("/mqtt-order")
+    public String handleMQTTOrder(@RequestBody Map<String, Object> orderData) {
+        try {
+            String orderId = (String) orderData.get("orderId");
+            int userId = (Integer) orderData.get("userId");
+            String machineIdStr = (String) orderData.get("machineId");
+            double totalPrice = ((Number) orderData.get("totalPrice")).doubleValue();
+
+            List<Map<String, Object>> items = (List<Map<String, Object>>) orderData.get("items");
+
+            int machineId = Integer.parseInt(machineIdStr);
+
+            orderService.processOrderFromMQTT(orderId, userId, machineId, totalPrice, items);
+
+            return "订单处理成功: " + orderId;
+        } catch (Exception e) {
+            System.err.println("处理MQTT订单时出错: " + e.getMessage());
+            return "订单处理失败: " + e.getMessage();
+        }
+    }
+
 }

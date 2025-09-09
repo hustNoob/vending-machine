@@ -234,32 +234,58 @@ public class MqttSubscriberService {
         }
     }
 
-
     /**
      * 处理订单消息
      */
+// 修改 handleOrder 方法
     private void handleOrder(String topic, String payload, MqttLog log) {
         try {
+            System.out.println("=== 处理MQTT订单 ===");
+            System.out.println("收到订单消息 - 主题: " + topic);
+            System.out.println("收到订单消息 - payload: " + payload);
+
             // 解析 JSON 消息
             JsonNode root = objectMapper.readTree(payload);
 
             String orderId = root.get("orderId").asText();
             int userId = root.get("userId").asInt();
-            int vendingMachineId = root.get("machineId").asInt();
+            String vendingMachineIdStr = root.get("machineId").asText();
             double totalPrice = root.get("totalPrice").asDouble();
 
-            // 调用服务创建订单
-            orderService.createOrderFromMachine(vendingMachineId, userId, orderId, totalPrice);
-            System.out.println("订单已成功处理 - 订单ID: " + orderId);
+            // 解析商品项目
+            List<Map<String, Object>> items = new ArrayList<>();
+            if (root.has("items") && root.get("items").isArray()) {
+                for (JsonNode itemNode : root.get("items")) {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("productId", itemNode.get("productId").asInt());
+                    item.put("quantity", itemNode.get("quantity").asInt());
+                    items.add(item);
+                }
+            }
+
+            int vendingMachineId = Integer.parseInt(vendingMachineIdStr);
+
+            System.out.println("解析订单信息 - 订单ID: " + orderId + ", 用户ID: " + userId +
+                    ", 售货机ID: " + vendingMachineId + ", 总价: " + totalPrice);
+
+            // 通过新的订单处理方法处理完整订单
+            orderService.processOrderFromMQTT(orderId, userId, vendingMachineId, totalPrice, items);
+
+            System.out.println("订单已完成处理 - 订单ID: " + orderId);
 
             // 存储日志
             synchronized (messageLogs) {
                 messageLogs.get("order").add(log);
             }
+            System.out.println("订单数据已写入日志 - 订单ID: " + orderId);
         } catch (Exception e) {
-            System.err.println("处理订单消息失败：" + e.getMessage());
+            System.out.println("订单处理失败 - " + e.getMessage());
+            e.printStackTrace();
         }
+        System.out.println("========================");
     }
+
+
 
     /**
      * 获取分类的 MQTT 消息日志

@@ -4,6 +4,7 @@ import com.rem.vendingmachine.model.CheckoutRequest;
 import com.rem.vendingmachine.model.Order;
 
 import java.util.List;
+import java.util.Map;
 
 public interface OrderService {
 
@@ -35,8 +36,12 @@ public interface OrderService {
     //查询全部订单
     List<Order> getAllOrders();
 
-    public void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice);
+    void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice);
 
     public List<Order> queryOrders(Integer userId, Integer status, Integer machineId);
+
+    // 在OrderService接口中添加
+    void processOrderFromMQTT(String orderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items);
+
 
 }

@@ -20,6 +20,10 @@ public class MqttPublisherService {
      * @param qos     服务质量等级（0, 1, 2）
      */
     public void publish(String topic, String payload, int qos) {
+        System.out.println("开始发布MQTT消息 - 主题: " + topic);
+        System.out.println("开始发布MQTT消息 - 内容: " + payload);
+        System.out.println("开始发布MQTT消息 - QoS: " + qos);
+
         try {
             // 将消息内容封装为 MQTT 消息对象
             MqttMessage message = new MqttMessage(payload.getBytes());
@@ -31,7 +35,11 @@ public class MqttPublisherService {
         } catch (MqttException e) {
             // 异常日志
             System.err.println("消息发布失败 - 主题: " + topic + ", 错误: " + e.getMessage());
+            e.printStackTrace(); // 添加堆栈跟踪
             throw new RuntimeException("MQTT 消息发布失败", e); // 向上抛出异常（可选，根据业务需求）
+        } catch (Exception e) {
+            System.err.println("未知异常 - 主题: " + topic + ", 错误: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -124,4 +125,28 @@ public class VendingMachineController {
         return machines.stream().map(VendingMachine::getId).collect(Collectors.toList());
     }
 
+    @PostMapping("/mqtt/order")
+    public String sendOrderToMQTT(@RequestBody Map<String, Object> orderData) {
+        try {
+            // 提取订单信息
+            String orderId = (String) orderData.get("orderId");
+            int userId = (Integer) orderData.get("userId");
+            String machineId = (String) orderData.get("machineId");
+            double totalPrice = ((Number) orderData.get("totalPrice")).doubleValue();
+
+            // 构造MQTT消息负载
+            String payload = String.format(
+                    "{\"orderId\": \"%s\", \"userId\": %d, \"machineId\": \"%s\", \"totalPrice\": %.2f}",
+                    orderId, userId, machineId, totalPrice
+            );
+
+            // 发布到MQTT主题
+            String topic = "vendingmachine/order/" + orderId;
+            mqttPublisherService.publish(topic, payload);
+
+            return "订单已通过MQTT上报: " + orderId;
+        } catch (Exception e) {
+            return "订单上报失败: " + e.getMessage();
+        }
+    }
 }
