@@ -1,0 +1,222 @@
+/* mqtt.css - MQTT 控制页面专用样式 */
+
+/* 整体容器布局 */
+.mqtt-container {
+    max-width: 1200px; /* 限制最大宽度 */
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- 数据监控区域布局 --- */
+.mqtt-data-monitoring {
+    display: flex; /* 使用 Flexbox 布局 */
+    gap: 20px; /* 左右区域间距 */
+    margin-bottom: 25px;
+}
+
+/* 左侧：心跳和状态区域 - 垂直堆叠 */
+.mqtt-left-column {
+    flex: 1; /* 占据剩余空间 */
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* 上下区域间距 */
+}
+
+/* 右侧：订单区域 */
+.mqtt-right-column {
+    flex: 1; /* 占据剩余空间 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 单个数据监控板块 */
+.mqtt-data-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 15px;
+    background-color: #fafafa;
+}
+
+.mqtt-data-section h4 {
+    margin: 0 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+    font-size: 1.1em;
+}
+
+/* 表格容器 - 控制滚动和固定表头 */
+.data-table-container {
+    max-height: 250px; /* 固定高度 */
+    overflow-y: auto;   /* 垂直滚动 */
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.data-table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.data-table-container th,
+.data-table-container td {
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    text-align: left;
+    white-space: nowrap; /* 防止单元格换行 */
+}
+
+.data-table-container th {
+    background-color: #f0f0f0;
+    position: sticky; /* 表头固定 */
+    top: 0;
+    z-index: 10; /* 确保表头在滚动内容之上 */
+}
+
+/* 特定板块高度调整 */
+.heartbeat-section .data-table-container,
+.state-section .data-table-container {
+    max-height: 180px; /* 心跳和状态区域表格稍矮 */
+}
+
+.order-section .data-table-container {
+    flex-grow: 1; /* 订单区域表格占满父容器 */
+}
+
+
+/* --- 命令下发区域 --- */
+.mqtt-command-section {
+    border: 1px solid #d0d0d0;
+    border-radius: 5px;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.mqtt-command-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+/* 命令分组 */
+.command-group {
+    display: flex;
+    flex-wrap: wrap; /* 允许换行 */
+    gap: 15px; /* 控件间距 */
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.command-group:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.command-group label {
+    flex: 0 0 150px; /* 标签固定宽度 */
+    font-weight: bold;
+    margin-top: 6px; /* 与输入框对齐 */
+}
+
+.command-group input,
+.command-group select {
+    flex: 1; /* 输入框和选择框占满剩余空间 */
+    min-width: 100px; /* 最小宽度 */
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.command-group button {
+    flex: 0 0 auto; /* 按钮自适应内容宽度 */
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.command-group button:hover {
+    background-color: #0056b3;
+}
+
+/* 通用命令表单特殊处理 */
+#mqttCommonCommandForm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#mqttCommonCommandForm input,
+#mqttCommonCommandForm textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#mqttCommonCommandForm textarea {
+    min-height: 80px;
+    resize: vertical; /* 允许垂直拉伸 */
+}
+
+
+/* --- 响应式处理 --- */
+@media (max-width: 768px) {
+    .mqtt-data-monitoring {
+        flex-direction: column; /* 小屏幕时，上下堆叠 */
+    }
+    .command-group {
+        flex-direction: column; /* 小屏幕时，控件垂直排列 */
+    }
+    .command-group label {
+        flex: none;
+        margin-bottom: 5px;
+    }
+    .command-group input,
+    .command-group select,
+    .command-group button {
+        flex: none;
+        width: 100%;
+    }
+}
+
+/* --- 状态颜色 --- */
+.status-offline {
+    color: #dc3545; /* Bootstrap Danger Red */
+    font-weight: bold;
+}
+.status-online {
+    color: #28a745; /* Bootstrap Success Green */
+}
+.status-maintenance {
+    color: #ffc107; /* Bootstrap Warning Yellow */
+}
+
+/* --- 优化设备列表表格布局，防止内容撑开 --- */
+#deviceList {
+    table-layout: fixed; /* 固定表格布局 */
+    width: 100%;
+}
+
+#deviceList th,
+#deviceList td {
+    word-wrap: break-word; /* 允许长单词换行 */
+    word-break: break-all; /* 强制换行 */
+}
+
+/* 可以给特定列设置宽度，如果不设置，会平均分配 */
+#deviceList th:nth-child(1), #deviceList td:nth-child(1) { width: 10%; } /* ID */
+#deviceList th:nth-child(2), #deviceList td:nth-child(2) { width: 10%; } /* 状态 */
+#deviceList th:nth-child(3), #deviceList td:nth-child(3) { width: 15%; } /* 温度 */
+#deviceList th:nth-child(4), #deviceList td:nth-child(4) { width: 20%; } /* 心跳时间 */
+#deviceList th:nth-child(5), #deviceList td:nth-child(5) { width: 45%; } /* 告警信息 (给更多空间) */

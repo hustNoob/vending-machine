@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/vending-machine")
@@ -116,5 +117,11 @@ public class VendingMachineController {
         return productService.listAllProducts(); // 返回所有商品
     }
 
+    // 临时测试接口
+    @GetMapping("/debug/all-machine-ids")
+    public List<Integer> getAllMachineIds() {
+        List<VendingMachine> machines = vendingMachineService.getAllVendingMachines();
+        return machines.stream().map(VendingMachine::getId).collect(Collectors.toList());
+    }
 
 }

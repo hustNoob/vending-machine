@@ -24,4 +24,10 @@ public interface ProductMapper {
     List<Product> selectLowStockProduct();
 
     int updateStock(@Param("id") int id, @Param("quantity") int quantity); //根据库存不足的id去添加库存
+
+    int adjustStockSafely(@Param("id") int id, @Param("quantity") int quantity, @Param("absQuantity") int absQuantity);
+
+    // 设置库存为指定值
+    int setStock(@Param("id") int id, @Param("newStock") int newStock);
+
 }

@@ -5,7 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+@EnableScheduling
 @SpringBootApplication
 public class VendingMachineApplication implements CommandLineRunner {
 
@@ -22,6 +24,7 @@ public class VendingMachineApplication implements CommandLineRunner {
         mqttSubscriberService.subscribe("vendingmachine/heartbeat/#");
         mqttSubscriberService.subscribe("vendingmachine/state/#");
         mqttSubscriberService.subscribe("vendingmachine/order/#");
+        mqttSubscriberService.subscribe("vendingmachine/inventory/request/#");
         System.out.println("服务端完成了所有 MQTT 主题的订阅");
     }
 }

@@ -35,14 +35,35 @@
         where stock &lt; 0 and status = 1
     </select>
 
+    <!-- 移除更新库存的字段 -->
     <update id="updateStock">
-        update vending_machine.product
-        set stock = product.stock + #{quantity}, update_time = current_timestamp
-        where id=#{id}
+        UPDATE vending_machine_product
+        SET stock = stock + #{quantity}
+        WHERE vending_machine_id = #{machineId} AND product_id = #{productId}
     </update>
 
     <select id="selectProductNameById" resultType="String">
         SELECT name FROM product WHERE id = #{productId}
     </select>
+
+    <update id="adjustStockSafely" parameterType="map">
+        UPDATE product
+        SET stock = stock + #{quantity}
+        WHERE id = #{id}
+        <!-- 确保操作后库存不会变成负数（防止超卖） -->
+        <!-- 例如，减少2个，当前库存必须 >= 2 -->
+        <if test="quantity &lt; 0">
+            AND stock >= #{absQuantity} <!-- 需要传入 quantity 的绝对值 absQuantity -->
+        </if>
+    </update>
+
+    <!-- 新增：设置库存为指定值 -->
+    <update id="setStock" parameterType="map">
+        UPDATE product
+        SET stock = #{newStock}
+        WHERE id = #{id}
+        AND stock >= 0 <!-- 只允许修改非负库存 -->
+    </update>
+
 
 </mapper>

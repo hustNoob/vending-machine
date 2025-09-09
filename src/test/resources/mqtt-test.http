@@ -3,7 +3,7 @@ POST http://localhost:8080/api/test-publish
 Content-Type: application/json
 
 {
-  "topic": "vendingmachine/command/test",
-  "payload": "{\"command\":\"CHANGE_TEMPERATURE\",\"value\":25}"
+  "topic": "vendingmachine/command/1",
+  "payload": "{\"command\": \"SET_STATUS\", \"value\": 1}"
 }
 

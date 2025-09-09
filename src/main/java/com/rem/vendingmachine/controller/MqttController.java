@@ -5,6 +5,7 @@ import com.rem.vendingmachine.mqtt.MqttSubscriberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
 
 @RestController
@@ -19,4 +20,11 @@ public class MqttController {
     public List<MqttLog> getLogs(@RequestParam String type) {
         return mqttSubscriberService.getLogs(type);
     }
+
+    // --- 获取所有设备快照 ---
+    @GetMapping("/devices")
+    public Collection<MqttSubscriberService.DeviceSnapshot> getDeviceSnapshots() {
+        return mqttSubscriberService.getAllDeviceSnapshotsComprehensive(); // 新方法
+    }
+
 }

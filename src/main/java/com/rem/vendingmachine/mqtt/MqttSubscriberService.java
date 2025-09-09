@@ -2,18 +2,23 @@ package com.rem.vendingmachine.mqtt;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rem.vendingmachine.model.VendingMachine;
+import com.rem.vendingmachine.model.VendingMachineProduct;
 import com.rem.vendingmachine.service.OrderService;
+import com.rem.vendingmachine.service.VendingMachineProductService;
 import com.rem.vendingmachine.service.VendingMachineService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class MqttSubscriberService {
@@ -27,7 +32,40 @@ public class MqttSubscriberService {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private VendingMachineProductService vendingMachineProductService;
+
+    @Autowired
+    private  MqttPublisherService mqttPublisherService;
+
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    private final Map<String, DeviceSnapshot> deviceSnapshots = new ConcurrentHashMap<>();
+
+    // 内部类，用于存储设备快照数据
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class DeviceSnapshot {
+        private String machineId;
+        private double temperature = 0.0;
+        private int status = 0; // 默认离线
+        private long lastHeartbeat = 0;
+        private long lastStateUpdate = 0;
+        private String alerts = "无";
+
+        @Override
+        public String toString() {
+            return "DeviceSnapshot{" +
+                    "machineId='" + machineId + '\'' +
+                    ", temperature=" + temperature +
+                    ", status=" + status +
+                    ", lastHeartbeat=" + lastHeartbeat +
+                    ", lastStateUpdate=" + lastStateUpdate +
+                    ", alerts='" + alerts + '\'' +
+                    '}';
+        }
+    }
 
     // 内存中的 MQTT 消息存储
     private final Map<String, List<MqttLog>> messageLogs = new ConcurrentHashMap<>();
@@ -74,11 +112,58 @@ public class MqttSubscriberService {
                 handleState(topic, payload, log);
             } else if (topic.startsWith("vendingmachine/order")) {
                 handleOrder(topic, payload, log);
+            } else if (topic.startsWith("vendingmachine/inventory/request/")) {
+                handleInventoryRequest(topic, payload, log);
             } else {
                 System.err.println("未知主题消息：" + topic);
             }
         } catch (Exception e) {
             System.err.println("处理消息时发生错误：" + e.getMessage());
+        }
+    }
+
+    // --- 处理库存请求 ---
+    private void handleInventoryRequest(String topic, String payload, MqttLog log) {
+        try {
+            JsonNode rootNode = objectMapper.readTree(payload);
+            String machineId = rootNode.path("machineId").asText();
+            System.out.println("收到设备 " + machineId + " 的库存请求。");
+
+            // 查询数据库获取该设备的商品和库存
+            List<VendingMachineProduct> products = vendingMachineProductService.getProductsByMachineId(Integer.parseInt(machineId));
+
+            // 构造响应载荷
+            Map<String, Object> response = new HashMap<>();
+            response.put("machineId", machineId);
+
+            List<Map<String, Object>> productList = products.stream().map(p -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("productId", p.getProductId());
+                item.put("productName", p.getProductName());
+                item.put("stock", p.getStock());
+                return item;
+            }).collect(Collectors.toList());
+
+            response.put("products", productList);
+
+            String responsePayload = objectMapper.writeValueAsString(response);
+            String responseTopic = "vendingmachine/inventory/response/" + machineId;
+
+            // --- 新增/修改：强制打印设备1的响应，方便快速检查 ---
+            if ("1".equals(machineId)) {
+                System.out.println(">>>>>>>>>>>>>>> [快速检查 - 设备1库存响应] <<<<<<<<<<<<<<<");
+                System.out.println(">>> 发往主题: " + responseTopic);
+                System.out.println(">>> 响应内容: " + responsePayload);
+                System.out.println(">>>>>>>>>>>>>>> [快速检查结束] <<<<<<<<<<<<<<<");
+            }
+            // --- 新增/修改结束 ---
+
+            // 使用 MqttPublisherService 发送响应
+            mqttPublisherService.publish(responseTopic, responsePayload);
+            System.out.println("已向设备 " + machineId + " 发送库存响应。");
+
+        } catch (Exception e) {
+            System.err.println("处理库存请求失败: " + e.getMessage() + ", Payload: " + payload);
         }
     }
 
@@ -90,6 +175,13 @@ public class MqttSubscriberService {
             // 从主题中提取 machineId
             String[] topicParts = topic.split("/");
             int machineId = Integer.parseInt(topicParts[2]);
+
+            // --- 新增/修改：更新设备快照 ---
+            deviceSnapshots.computeIfAbsent(String.valueOf(machineId), k -> {
+                DeviceSnapshot snapshot = new DeviceSnapshot();
+                snapshot.setMachineId(k);
+                return snapshot;
+            }).setLastHeartbeat(log.getTimestamp());
 
             // 更新数据库中的 lastUpdateTime
             vendingMachineService.updateLastUpdateTime(machineId, LocalDateTime.now());
@@ -109,25 +201,39 @@ public class MqttSubscriberService {
      */
     private void handleState(String topic, String payload, MqttLog log) {
         try {
-            // 解析 JSON 消息
             JsonNode root = objectMapper.readTree(payload);
-
-            int machineId = root.get("machineId").asInt();
+            String machineId = root.get("machineId").asText(); // 从 payload 获取 ID 更安全
             double temperature = root.get("temperature").asDouble();
             int status = root.get("status").asInt();
+            String alerts = root.has("alerts") ? root.get("alerts").asText() : "无"; // 获取告警
 
-            // 更新售货机状态到数据库
-            vendingMachineService.updateVendingMachineStatus(machineId, temperature, status);
-            System.out.println("状态已更新 - 设备ID: " + machineId + ", 温度: " + temperature + ", 状态: " + status);
+            if (!"无".equals(alerts)) {
+                System.out.println("[后端收到状态] 设备 " + machineId + " 上报告警: " + alerts);
+            }
 
-            // 存储日志
+            // --- 更新设备快照 ---
+            deviceSnapshots.computeIfAbsent(machineId, k -> {
+                DeviceSnapshot snapshot = new DeviceSnapshot();
+                snapshot.setMachineId(k);
+                return snapshot;
+            });
+            DeviceSnapshot snapshot = deviceSnapshots.get(machineId);
+            snapshot.setTemperature(temperature);
+            snapshot.setStatus(status);
+            snapshot.setAlerts(alerts);
+
+
+            vendingMachineService.updateVendingMachineStatus(Integer.parseInt(machineId), temperature, status);
+            System.out.println("状态已更新 - 设备ID: " + machineId + ", 温度: " + temperature + ", 状态: " + status + ", 告警: " + alerts);
+
             synchronized (messageLogs) {
                 messageLogs.get("state").add(log);
             }
         } catch (Exception e) {
-            System.err.println("处理状态消息失败：" + e.getMessage());
+            System.err.println("处理状态消息失败：" + e.getMessage() + ", Payload: " + payload);
         }
     }
+
 
     /**
      * 处理订单消息
@@ -192,5 +298,53 @@ public class MqttSubscriberService {
         public long getTimestamp() {
             return timestamp;
         }
+    }
+
+    public Collection<DeviceSnapshot> getAllDeviceSnapshots() {
+        return this.deviceSnapshots.values();
+    }
+
+    /**
+     * 获取所有设备的快照 (合并数据库中的所有设备和有活动记录的设备快照)
+     * 改进：对于数据库中有但快照中没有的设备，使用数据库的实时数据进行初始化
+     * @return 包含所有设备信息的集合
+     */
+    public Collection<DeviceSnapshot> getAllDeviceSnapshotsComprehensive() {
+        // 1. 获取数据库中所有的售货机 (这应该总是最新的数据库状态)
+        List<VendingMachine> allMachines = vendingMachineService.getAllVendingMachines();
+
+        // 2. 获取当前有活动记录的快照 (来自 MQTT 消息)
+        Map<String, DeviceSnapshot> activeSnapshots = this.deviceSnapshots; // ConcurrentHashMap
+
+        // 3. 合并信息
+        Map<String, DeviceSnapshot> comprehensiveMap = new HashMap<>();
+
+        // a. 先处理所有有活动记录的快照，放入 Map
+        for (Map.Entry<String, DeviceSnapshot> entry : activeSnapshots.entrySet()) {
+            comprehensiveMap.put(entry.getKey(), entry.getValue());
+        }
+
+        // b. 再遍历数据库中的所有机器，如果 Map 中没有这个 ID，则用数据库实时数据创建一个快照
+        for (VendingMachine machine : allMachines) {
+            String machineIdStr = String.valueOf(machine.getId());
+            if (!comprehensiveMap.containsKey(machineIdStr)) {
+                // 如果快照中没有，则用数据库的实时数据初始化一个快照
+                DeviceSnapshot snapshot = new DeviceSnapshot();
+                snapshot.setMachineId(machineIdStr);
+                // 使用数据库中的当前温度和状态
+                snapshot.setTemperature(machine.getTemperature() != null ? machine.getTemperature() : 0.0);
+                Integer status = machine.getStatus();   // 先拿到包装类型
+                snapshot.setStatus(status != null ? status : 0);
+                // 由于没有活动记录，设置为非常久远的过去或特殊标记
+                snapshot.setLastHeartbeat(0); // 或者可以设置一个非常老的时间戳
+                snapshot.setLastStateUpdate(0);
+                // 由于没有告警信息，可以设置为 "无实时告警信息" 或其他提示
+                snapshot.setAlerts("暂无实时告警信息"); // <--- 修改提示信息
+                comprehensiveMap.put(machineIdStr, snapshot);
+            }
+            // 如果 Map 中已经有 (来自 activeSnapshots)，则跳过，保留 MQTT 的动态数据
+        }
+
+        return comprehensiveMap.values();
     }
 }

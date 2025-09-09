@@ -1,12 +1,16 @@
 package com.rem.vendingmachine.service;
 
+import com.rem.vendingmachine.model.CheckoutRequest;
 import com.rem.vendingmachine.model.Order;
 
 import java.util.List;
 
 public interface OrderService {
 
-    // 创建订单
+    // 创建订单（购物车功能）
+    boolean createOrder(int userId, List<CheckoutRequest.CartItem> cartItems);
+
+    // 创建订单（支持直接手动指定的商品ID和数量）
     boolean createOrder(Order order, List<Integer> productIds, List<Integer> quantities);
 
     // 查询单个订单详情
@@ -30,7 +34,6 @@ public interface OrderService {
 
     //查询全部订单
     List<Order> getAllOrders();
-
 
     public void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice);
 

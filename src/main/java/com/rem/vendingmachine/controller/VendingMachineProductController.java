@@ -4,6 +4,7 @@ import com.rem.vendingmachine.model.Product;
 import com.rem.vendingmachine.model.VendingMachineProduct;
 import com.rem.vendingmachine.service.ProductService;
 import com.rem.vendingmachine.service.VendingMachineProductService;
+import com.rem.vendingmachine.service.VendingMachineProductServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -72,5 +73,17 @@ public class VendingMachineProductController {
                                            @PathVariable int productId) {
         boolean success = vendingMachineProductService.removeProductFromMachine(vendingMachineId, productId);
         return success ? "商品已从售货机移除！" : "移除商品失败，请重试！";
+    }
+
+    @PutMapping("/{vendingMachineId}/set-stock")
+    public String setProductStock(@PathVariable int vendingMachineId,
+                                  @RequestParam int productId,
+                                  @RequestParam int newStock) {
+        // 可以在这里添加 newStock >= 0 的校验
+        if (newStock < 0) {
+            return "库存不能设置为负数！";
+        }
+        boolean success = ((VendingMachineProductServiceImpl) vendingMachineProductService).setProductStock(vendingMachineId, productId, newStock); // 强制转换以调用新增方法，或在接口中添加
+        return success ? "库存设置成功！" : "库存设置失败，请重试！";
     }
 }

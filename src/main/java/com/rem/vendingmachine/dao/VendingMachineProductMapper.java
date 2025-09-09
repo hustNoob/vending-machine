@@ -17,11 +17,18 @@ public interface VendingMachineProductMapper {
                                     @Param("productId") int productId);
 
     // 更新某台售货机中某商品的库存
-    int updateVendingMachineProductStock(@Param("vendingMachineId") int vendingMachineId, @Param("productId") int productId, @Param("stock") int stock);
+    int updateVendingMachineProductStock(@Param("vendingMachineId") int vendingMachineId,
+                                         @Param("productId") int productId,
+                                         @Param("stock") int stock,
+                                         @Param("absStock") int absStock);
 
     // 查询某台售货机中的所有商品（库存信息）
     List<VendingMachineProduct> selectProductsByVendingMachineId(@Param("vendingMachineId") int vendingMachineId);
 
     // 查询某台售货机中是否存在某商品
     VendingMachineProduct selectVendingMachineProduct(@Param("vendingMachineId") int vendingMachineId, @Param("productId") int productId);
+
+    int setVendingMachineProductStock(@Param("vendingMachineId") int vendingMachineId,
+                                      @Param("productId") int productId,
+                                      @Param("newStock") int newStock);
 }

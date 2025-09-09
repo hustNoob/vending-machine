@@ -1,9 +1,11 @@
 package com.rem.vendingmachine.controller;
 
+import com.rem.vendingmachine.model.CheckoutRequest;
 import com.rem.vendingmachine.model.CreateOrderRequest;
 import com.rem.vendingmachine.model.Order;
 import com.rem.vendingmachine.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -24,14 +26,15 @@ public class OrderController {
     @PostMapping("/create")
     public String createOrder(@RequestBody CreateOrderRequest request) {
         try {
+            // 获取请求参数
             int userId = request.getUserId();
             List<Integer> productIds = request.getProductIds();
             List<Integer> quantities = request.getQuantities();
 
             Order order = new Order();
             order.setUserId(userId);
-            order.setTotalPrice(BigDecimal.ZERO); // Service 会计算
 
+            // 调用 createOrder（共享逻辑）
             boolean success = orderService.createOrder(order, productIds, quantities);
 
             if (success) {
@@ -43,6 +46,7 @@ public class OrderController {
             return "Error: " + e.getMessage();
         }
     }
+
 
     /**
      * 查询某订单详情接口
@@ -123,4 +127,16 @@ public class OrderController {
         return orderService.queryOrders(userId, status, machineId);
     }
 
+    @PostMapping("/checkout")
+    public ResponseEntity<?> checkout(@RequestBody CheckoutRequest request) {
+        try {
+            boolean success = orderService.createOrder(request.getUserId(), request.getOrder());
+            if (!success) {
+                throw new RuntimeException("支付失败，请检查余额或库存");
+            }
+            return ResponseEntity.ok("支付成功！");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

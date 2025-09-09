@@ -15,6 +15,7 @@
         <select id="userSelect"></select>
         <h2>售货机</h2>
         <select id="machineSelect"></select>
+
         <hr>
         <button onclick="window.location.href='user.html'" class="big-button">用户管理</button>
         <button onclick="window.location.href='product.html'" class="big-button">商品管理</button>
@@ -48,7 +49,7 @@
                 <!-- 动态加载购物车内容 -->
                 </tbody>
             </table>
-            <button id="checkoutButton">去付款</button>
+            <button id="checkoutButton" onclick="checkout()">去付款</button>
         </div>
 
     </main>

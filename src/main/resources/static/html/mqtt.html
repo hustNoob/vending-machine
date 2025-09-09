@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MQTT 演示</title>
+    <title>MQTT 控制</title>
+    <!-- 引入主样式表 -->
     <link rel="stylesheet" href="/css/style.css">
+    <!-- 引入 MQTT 专用样式表 -->
+    <link rel="stylesheet" href="/css/mqtt.css">
 </head>
 <body>
 <!-- 返回主页按钮 -->
@@ -12,67 +15,87 @@
     <button onclick="window.location.href='index.html'" class="back-button">返回主页</button>
 </div>
 
-<!-- 页面结构 -->
+<!-- 主要 MQTT 容器 -->
 <div class="mqtt-container">
-    <!-- 命令下发 -->
-    <div class="mqtt-command">
+
+    <!-- 数据监控区域 -->
+    <div class="mqtt-data-monitoring">
+        <!-- 左侧列：设备状态列表 -->
+        <div class="mqtt-left-column">
+            <div class="mqtt-data-section device-list-section">
+                <h4>设备状态列表</h4>
+                <div class="data-table-container">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>设备 ID</th>
+                            <th>状态</th>
+                            <th>温度</th>
+                            <th>心跳时间</th>
+                            <th>告警信息</th>
+                        </tr>
+                        </thead>
+                        <tbody id="deviceList">
+                        <tr><td colspan="5">等待数据或无设备...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧列：订单 -->
+        <div class="mqtt-right-column">
+            <div class="mqtt-data-section order-section">
+                <h4>订单上报</h4>
+                <div class="data-table-container">
+                    <table>
+                        <thead>
+                        <tr><th>订单 ID</th><th>用户 ID</th><th>金额</th><th>时间</th></tr>
+                        </thead>
+                        <tbody id="orderList">
+                        <tr><td colspan="4">等待订单...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div> <!-- /数据监控区域 -->
+
+    <!-- 命令下发区域 -->
+    <div class="mqtt-command-section">
         <h3>命令下发</h3>
-        <form id="mqttCommandForm">
-            <label for="topic">主题（Topic）：</label>
-            <input type="text" id="topic" placeholder="请输入主题">
-            <label for="payload">消息内容（Payload）：</label>
-            <textarea id="payload" placeholder="请输入消息内容"></textarea>
-            <button type="submit">发送命令</button>
-        </form>
-    </div>
 
-    <!-- 数据上报 -->
-    <div class="mqtt-data">
-        <h3>实时数据上报</h3>
-
-        <!-- 心跳数据 -->
-        <div id="heartbeatLogs">
-            <h4>心跳上报</h4>
-            <table>
-                <thead>
-                <tr><th>设备 ID</th><th>心跳时间</th></tr>
-                </thead>
-                <tbody id="heartbeatList">
-                <!-- 动态数据会被填充到这里 -->
-                <tr><td colspan="2">暂无数据</td></tr>
-                </tbody>
-            </table>
+        <div class="command-group">
+            <label for="setTempMachineId">售货机 ID:</label>
+            <input type="number" id="setTempMachineId" placeholder="例如: 1">
+            <label for="setTargetTemperature">目标温度 (℃):</label>
+            <input type="number" id="setTargetTemperature" placeholder="例如: 25.5" step="0.1">
+            <button type="button" onclick="sendSetTemperatureCommand()">下发温度命令</button>
         </div>
 
-        <!-- 状态数据 -->
-        <div id="stateLogs">
-            <h4>状态上报</h4>
-            <table>
-                <thead>
-                <tr><th>设备 ID</th><th>温度</th><th>状态</th><th>时间</th></tr>
-                </thead>
-                <tbody id="stateList">
-                <!-- 动态数据会被填充到这里 -->
-                <tr><td colspan="4">暂无数据</td></tr>
-                </tbody>
-            </table>
+        <div class="command-group">
+            <label for="setStatusMachineId">售货机 ID:</label>
+            <input type="number" id="setStatusMachineId" placeholder="例如: 1">
+            <label for="setStatusValue">目标状态:</label>
+            <select id="setStatusValue">
+                <option value="1">在线 (1)</option>
+                <option value="0">离线 (0)</option>
+                <option value="2">需要维护 (2)</option>
+            </select>
+            <button type="button" onclick="sendSetStatusCommand()">下发状态命令</button>
         </div>
 
-        <!-- 订单数据 -->
-        <div id="orderLogs">
-            <h4>订单上报</h4>
-            <table>
-                <thead>
-                <tr><th>订单 ID</th><th>用户 ID</th><th>金额</th><th>时间</th></tr>
-                </thead>
-                <tbody id="orderList">
-                <!-- 动态数据会被填充到这里 -->
-                <tr><td colspan="4">暂无数据</td></tr>
-                </tbody>
-            </table>
+        <div class="command-group">
+            <h4>通用命令 (JSON)</h4>
+            <form id="mqttCommonCommandForm">
+                <input type="text" id="commonTopic" placeholder="请输入主题 (Topic)">
+                <textarea id="commonPayload" placeholder="请输入消息内容 (Payload, JSON)"></textarea>
+                <button type="submit">发送通用命令</button>
+            </form>
         </div>
-    </div>
-</div>
+    </div> <!-- /命令下发区域 -->
+
+</div> <!-- /主要 MQTT 容器 -->
 
 <script src="/js/mqtt.js"></script>
 </body>

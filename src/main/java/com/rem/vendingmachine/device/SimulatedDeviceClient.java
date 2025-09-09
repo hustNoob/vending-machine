@@ -1,11 +1,15 @@
 package com.rem.vendingmachine.device;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -13,37 +17,40 @@ import java.util.UUID;
 @AllArgsConstructor
 public class SimulatedDeviceClient {
 
-    private static final String BROKER_URL = "tcp://8.148.64.50:1883"; // MQTT Broker 地址
+    private static final String BROKER_URL = "tcp://8.148.64.50:1883";
     private MqttClient client;
     private String machineId;
+
+    // --- 通过 MQTT 从服务端获取内部的商品库存 ---
+    private final Map<Integer, Integer> inventory = new HashMap<>();
+
+    // --- 内部状态变量 ---
+    private double currentTemperature = 25.0; // 初始化一个默认温度
+    private int currentStatus = 1;           // 初始化为在线状态
+    private final ObjectMapper objectMapper = new ObjectMapper(); // 用于解析JSON命令
+    // --- 新增结束 ---
 
     public SimulatedDeviceClient(String machineId) {
         try {
             this.machineId = machineId;
-            String clientId = "SimulatedDevice_" + machineId + "_" + UUID.randomUUID(); // ClientID 保证唯一
+            String clientId = "SimulatedDevice_" + machineId + "_" + UUID.randomUUID();
             client = new MqttClient(BROKER_URL, clientId, new MemoryPersistence());
 
-            // 设置连接选项
             MqttConnectOptions options = new MqttConnectOptions();
-            options.setCleanSession(true); // 每次连接清理会话，确保数据一致性
-            options.setAutomaticReconnect(true); // 自动重连
+            options.setCleanSession(true);
+            options.setAutomaticReconnect(true);
             client.connect(options);
 
-            System.out.println("模拟设备已连接，设备ID: " + machineId);
+            System.out.println("模拟设备已连接，设备ID: " + machineId + ", 初始温度: " + currentTemperature + "℃, 初始状态: " + currentStatus);
         } catch (MqttException e) {
             System.err.println("模拟设备连接失败：" + e.getMessage());
         }
     }
 
-    /**
-     * 发布消息到指定主题
-     * @param topic   主题
-     * @param payload 消息内容
-     */
     public void publish(String topic, String payload) {
         try {
             MqttMessage message = new MqttMessage(payload.getBytes());
-            message.setQos(1); // 至少一次传递
+            message.setQos(1);
             client.publish(topic, message);
             System.out.println("消息已发布 - 主题: " + topic + ", 内容: " + payload);
         } catch (MqttException e) {
@@ -51,16 +58,21 @@ public class SimulatedDeviceClient {
         }
     }
 
-    /**
-     * 订阅主题，并设置回调处理收到的消息
-     * @param topic 订阅的主题
-     */
     public void subscribe(String topic) {
         try {
+            // --- 修改：订阅回调函数 ---
             client.subscribe(topic, (receivedTopic, message) -> {
                 String payload = new String(message.getPayload());
                 System.out.println("收到命令消息 - 主题: " + receivedTopic + ", 内容: " + payload);
-                processCommand(payload);
+                // 调用处理命令的方法
+                // --- 修改：根据不同的主题调用不同处理方法 ---
+                if (receivedTopic.startsWith("vendingmachine/inventory/response/")) {
+                    handleInventoryResponse(payload);
+                } else if (receivedTopic.startsWith("vendingmachine/command/")) {
+                    processCommand(payload);
+                } else {
+                    System.out.println("【警告】收到未知主题消息: " + receivedTopic);
+                }
             });
             System.out.println("成功订阅主题：" + topic);
         } catch (MqttException e) {
@@ -69,26 +81,164 @@ public class SimulatedDeviceClient {
     }
 
     /**
-     * 处理命令消息
-     * @param payload 命令内容
+     * 向服务端请求当前设备的库存信息
+     */
+    public void requestInventory() {
+        String topic = "vendingmachine/inventory/request/" + this.machineId;
+        String payload = String.format("{\"machineId\": \"%s\", \"timestamp\": %d}", this.machineId, System.currentTimeMillis());
+        this.publish(topic, payload);
+        System.out.println("【请求】已向服务端请求库存信息...");
+    }
+
+    /**
+     * 处理从服务端接收到的库存响应
+     * @param payload JSON 格式的库存数据
+     */
+    private void handleInventoryResponse(String payload) {
+        try {
+            JsonNode rootNode = objectMapper.readTree(payload);
+            String respMachineId = rootNode.path("machineId").asText();
+            if (!this.machineId.equals(respMachineId)) {
+                System.out.println("【警告】收到的库存响应不属于本设备 (期待: " + this.machineId + ", 实际: " + respMachineId + ")");
+                return;
+            }
+
+            JsonNode productsNode = rootNode.path("products");
+            if (productsNode.isArray()) {
+                // --- 关键修改：用服务端返回的数据更新本地 inventory ---
+                Map<Integer, Integer> newInventory = new HashMap<>();
+                for (JsonNode productNode : productsNode) {
+                    int productId = productNode.path("productId").asInt();
+                    int stock = productNode.path("stock").asInt();
+                    newInventory.put(productId, stock);
+                }
+                this.inventory.clear();
+                this.inventory.putAll(newInventory);
+                System.out.println("【库存更新】已从服务端接收并更新库存: " + this.inventory);
+                // --- 关键修改结束 ---
+            } else {
+                System.out.println("【警告】库存响应中 'products' 字段不是数组或不存在。");
+            }
+        } catch (Exception e) {
+            System.err.println("【错误】处理库存响应时失败: " + e.getMessage() + ", 原始载荷: " + payload);
+        }
+    }
+
+    /**
+     * 处理从服务端接收到的命令
+     * @param payload 命令内容 (JSON 格式)
      */
     private void processCommand(String payload) {
-        // 模拟执行命令，例如修改温度、更新状态等
-        System.out.println("执行命令：" + payload);
+        try {
+            JsonNode rootNode = objectMapper.readTree(payload);
+            String command = rootNode.path("command").asText();
+
+            switch (command.toUpperCase()) {
+                case "CHANGE_TEMPERATURE":
+                    double newTemp = rootNode.path("value").asDouble(currentTemperature);
+                    this.currentTemperature = newTemp;
+                    System.out.println("【命令执行】温度已更新至: " + this.currentTemperature + "℃");
+                    break;
+                case "SET_STATUS":
+                    int newStatus = rootNode.path("value").asInt(this.currentStatus);
+                    // --- 根据状态做出反应 ---
+                    if (newStatus == 0) {
+                        System.out.println("【命令执行】设备状态设置为离线 (0)，将无法处理购买请求。");
+                    } else if (newStatus == 1) {
+                        System.out.println("【命令执行】设备状态设置为在线 (1)，恢复服务。");
+                    }
+                    this.currentStatus = newStatus;
+                    System.out.println("【命令执行】状态已更新至: " + this.currentStatus);
+
+                    break;
+                case "DISPENSE_PRODUCT":
+                    if (this.currentStatus == 0) {
+                        System.out.println("【警告】设备处于离线状态 (0)，无法执行售货请求！");
+                        // 可以选择上报一个特殊的 "SALE_DENIED" 事件？
+                        return; // 阻止操作
+                    }
+                    JsonNode productNode = rootNode.path("productId");
+                    JsonNode quantityNode = rootNode.path("quantity");
+                    if (!productNode.isMissingNode() && !quantityNode.isMissingNode()) {
+                        int productId = productNode.asInt();
+                        int quantity = quantityNode.asInt();
+                        int currentStock = inventory.getOrDefault(productId, 0);
+                        if (currentStock >= quantity) {
+                            int newStock = currentStock - quantity;
+                            inventory.put(productId, newStock); // 关键修改：真正更新了库存！
+                            System.out.println("【售货】商品 " + productId + " 库存扣减 " + quantity + ", 剩余: " + newStock);
+                        } else {
+                            System.out.println("【售货失败】商品 " + productId + " 库存不足！当前: " + currentStock + ", 需要: " + quantity);
+                        }
+                    } else {
+                        System.out.println("【警告】DISPENSE_PRODUCT 命令缺少 productId 或 quantity 参数");
+                    }
+                    break;
+            }
+        } catch (Exception e) {
+            System.err.println("【命令执行】处理命令时出错: " + e.getMessage() + ", 原始命令内容: " + payload);
+        }
     }
 
     /**
      * 模拟订单上报
-     * @param orderId    订单编号
-     * @param userId     用户 ID
-     * @param totalPrice 订单总额
      */
     public void reportOrder(String orderId, int userId, double totalPrice) {
-        String topic = "vendingmachine/order/" + orderId;
+        String topic = "vendingmachine/order/" + orderId; // 保持原主题结构
         String payload = String.format(
                 "{\"orderId\": \"%s\", \"userId\": %d, \"machineId\": \"%s\", \"totalPrice\": %.2f}",
                 orderId, userId, this.machineId, totalPrice
         );
         publish(topic, payload);
+    }
+
+    /**
+     * 构造状态上报的 Payload。
+     * 注意：告警信息依赖于本地 inventory 状态。
+     * 建议在调用此方法前，通过 requestInventory() 触发库存同步，
+     * 以确保告警信息的准确性。
+     * 定时任务中已包含在状态上报前调用 requestInventory()。
+     * @return JSON 格式的 payload 字符串
+     */
+    public String getPayloadForStateReport() {
+        // --- 修改开始：添加日志，表明正在生成状态报告 ---
+        System.out.println("[设备 " + this.machineId + "] 正在生成状态报告...");
+        // --- 修改结束 ---
+
+        StringBuilder alertMessage = new StringBuilder();
+        // 遍历当前本地维护的库存
+        for (Map.Entry<Integer, Integer> entry : inventory.entrySet()) {
+            if (entry.getValue() == 0) { // 检查库存为 0 的商品
+                if (!alertMessage.isEmpty()) {
+                    alertMessage.append("; ");
+                }
+                // --- 修改：明确指出是根据本地库存判断 ---
+                alertMessage.append("商品 ID ").append(entry.getKey()).append(" (本地缓存) 库存为 0");
+                // --- 修改结束 ---
+            }
+        }
+
+        // 构造 JSON Payload
+        String alerts = !alertMessage.isEmpty() ? alertMessage.toString() : "无";
+
+        // --- 修改：记录生成的告警内容 ---
+        System.out.println("[设备 " + this.machineId + "] 生成的告警信息: " + alerts);
+        // --- 修改结束 ---
+
+        // 使用 Map 和 ObjectMapper 来构建更复杂的 JSON
+        Map<String, Object> stateData = new HashMap<>();
+        stateData.put("machineId", machineId);
+        stateData.put("temperature", currentTemperature);
+        stateData.put("status", currentStatus);
+        stateData.put("alerts", alerts);
+
+        try {
+            return objectMapper.writeValueAsString(stateData);
+        } catch (Exception e) {
+            System.err.println("构建状态上报 JSON 失败: " + e.getMessage());
+            // 失败时回退
+            return String.format("{\"machineId\": \"%s\", \"temperature\": %.2f, \"status\": %d, \"alerts\": \"%s\"}",
+                    machineId, currentTemperature, currentStatus, "构建JSON失败");
+        }
     }
 }

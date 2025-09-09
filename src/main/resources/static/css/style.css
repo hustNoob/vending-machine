@@ -573,3 +573,132 @@ th {
     text-align: center;
     font-style: italic;
 }
+
+/* MQTT 日志区域样式，控制高度和滚动 */
+.mqtt-logs-section {
+    margin-bottom: 20px; /* 各个类型日志之间的间距 */
+}
+
+#heartbeatLogs table,
+#stateLogs table {
+    max-height: 200px; /* 高度限制 */
+    overflow-y: auto;   /* 垂直滚动 */
+    display: block;     /* 配合 max-height 和 overflow-y */
+}
+#orderLogs table {
+    max-height: 300px; /* 订单区域可能更高 */
+    overflow-y: auto;
+    display: block;
+}
+
+/* MQTT 控制页 - 命令区域 */
+.mqtt-command-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.mqtt-command-section .command-group {
+    margin-bottom: 15px;
+}
+
+.mqtt-command-section .command-group:last-child {
+    margin-bottom: 0;
+}
+
+.mqtt-command-section label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.mqtt-command-section input,
+.mqtt-command-section select,
+.mqtt-command-section textarea {
+    width: calc(100% - 20px);
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+.mqtt-command-section button {
+    padding: 10px 15px;
+    background-color: #007bff; /* Bootstrap Primary Blue */
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.mqtt-command-section button:hover {
+    background-color: #0056b3;
+}
+
+/* MQTT 数据监控区域 */
+.mqtt-data-monitoring {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #ffffff;
+}
+
+/* 使用 Flexbox 或 Grid 布局来并排心跳和状态 */
+.mqtt-data-grid {
+    display: flex; /* 或者 display: grid; grid-template-columns: 1fr 1fr; */
+    gap: 20px; /* 元素之间的间距 */
+    margin-bottom: 20px;
+}
+
+/* 单个数据区域样式 */
+.mqtt-data-section {
+    flex: 1; /* Grid 模式下可以不用 */
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 10px;
+}
+.mqtt-data-section h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+/* 表格容器，用于控制滚动 */
+.data-table-container {
+    max-height: 200px; /* 固定高度 */
+    overflow-y: auto;   /* 垂直滚动 */
+}
+.data-table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em; /* 稍小字体 */
+}
+.data-table-container th,
+.data-table-container td {
+    border: 1px solid #ddd;
+    padding: 6px 8px;
+    text-align: left;
+    white-space: nowrap; /* 防止单元格内文字换行 */
+}
+.data-table-container th {
+    background-color: #f2f2f2;
+    position: sticky; /* 表头固定在顶部 */
+    top: 0;
+}
+/* 订单区域可以更高 */
+.order-section .data-table-container {
+    max-height: 400px; /* 订单区域更高 */
+}
+
+
+/* --- 可选：为不同状态添加颜色区分 --- */
+.status-offline {
+    color: #dc3545; /* 红色 */
+    font-weight: bold;
+}
+.status-online {
+    color: #28a745; /* 绿色 */
+}
+.status-maintenance {
+    color: #ffc107; /* 黄色 */
+}
+

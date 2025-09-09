@@ -156,8 +156,8 @@ function updateStock(machineId, productId, newStock) {
         return;
     }
 
-    fetch(`/api/vending-machine-product/${machineId}/update-stock?productId=${productId}&stock=${newStock}`, {
-        method: 'PUT'
+    fetch(`/api/vending-machine-product/${machineId}/set-stock?productId=${productId}&newStock=${newStock}`, {
+        method: 'PUT' // 保持 PUT 方法
     })
         .then(response => response.text())
         .then(message => {

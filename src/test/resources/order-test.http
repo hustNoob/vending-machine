@@ -1,10 +1,11 @@
-POST http://localhost:8080/api/order/create
+POST http://localhost:8080/api/order/checkout
 Content-Type: application/json
 
 {
   "userId": 1,
-  "productIds": [2],
-  "quantities": [5]
+  "order": [
+    { "productId": 1  , "quantity": 1 }
+  ]
 }
 
 ###

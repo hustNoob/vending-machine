@@ -17,10 +17,14 @@
     </delete>
 
     <!-- 更新某台售货机中某商品的库存 -->
-    <update id="updateVendingMachineProductStock">
+    <update id="updateVendingMachineProductStock" parameterType="map">
         UPDATE vending_machine_product
-        SET stock = #{stock}
-        WHERE vending_machine_id = #{vendingMachineId} AND product_id = #{productId};
+        SET stock = stock + #{stock} <!-- #{stock} 是增量 (正数增加, 负数减少) -->
+        WHERE vending_machine_id = #{vendingMachineId} AND product_id = #{productId}
+        <!-- 防止超卖 -->
+        <if test="stock &lt; 0">
+            AND stock >= #{absStock} <!-- #{absStock} 是 #{stock} 的绝对值 -->
+        </if>
     </update>
 
     <!-- 查询某台售货机中的所有商品 -->
@@ -43,5 +47,12 @@
         FROM vending_machine_product
         WHERE vending_machine_id = #{vendingMachineId} AND product_id = #{productId};
     </select>
+
+
+    <update id="setVendingMachineProductStock" parameterType="map">
+        UPDATE vending_machine_product
+        SET stock = #{newStock}
+        WHERE vending_machine_id = #{vendingMachineId} AND product_id = #{productId}
+    </update>
 
 </mapper>
