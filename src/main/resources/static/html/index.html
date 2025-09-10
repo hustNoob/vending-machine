@@ -24,6 +24,7 @@
         <button onclick="window.location.href='vending-machine.html'" class="big-button">售货机管理</button>
     </aside>
 
+    <!-- 在 index.html 中修改内容部分，添加推荐商品区域 -->
     <!-- 中间商品展示区域 -->
     <main class="content">
         <h1>商品列表</h1>
@@ -32,8 +33,16 @@
             <!-- 商品列表动态生成 -->
         </div>
 
+        <!-- 推荐商品区域 -->
+        <div id="recommendedSection" style="margin-top: 30px;">
+            <h2>为您推荐</h2>
+            <div id="recommendedProducts" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <!-- 推荐商品列表动态生成 -->
+            </div>
+        </div>
+
         <!-- 购物车 -->
-        <div id="cart">
+        <div id="cart" style="margin-top: 30px;">
             <h3>购物车</h3>
             <table>
                 <thead>
@@ -51,7 +60,6 @@
             </table>
             <button id="checkoutButton" onclick="checkout()">去付款</button>
         </div>
-
     </main>
 
     <!-- 右侧用户信息和订单区域 -->

@@ -1,5 +1,6 @@
 package com.rem.vendingmachine.service;
 
+import com.rem.vendingmachine.model.Product;
 import com.rem.vendingmachine.model.User;
 
 import java.util.List;
@@ -18,4 +19,6 @@ public interface UserService {
     boolean updateUser(User user);
 
     boolean deleteUserById(int userId);
+
+    List<Product> getRecommendedProducts(int userId);
 }

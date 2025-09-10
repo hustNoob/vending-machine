@@ -1,5 +1,6 @@
 package com.rem.vendingmachine.controller;
 
+import com.rem.vendingmachine.model.Product;
 import com.rem.vendingmachine.model.User;
 import com.rem.vendingmachine.service.UserService;
 import org.apache.ibatis.annotations.Delete;
@@ -85,5 +86,10 @@ public class UserController {
             return "删除成功";
         }
         return "删除失败";
+    }
+
+    @GetMapping("/recommend/{userId}")
+    public List<Product> getRecommendedProducts(@PathVariable int userId) {
+        return userService.getRecommendedProducts(userId);
     }
 }

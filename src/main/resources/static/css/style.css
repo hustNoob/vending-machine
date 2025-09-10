@@ -702,3 +702,39 @@ th {
     color: #ffc107; /* 黄色 */
 }
 
+/* 推荐商品样式 */
+#recommendedProducts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+#recommendedProducts .product {
+    width: 140px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+#recommendedProducts .product:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 123, 255, 0.2);
+}
+
+#recommendedProducts .product button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#recommendedProducts .product button:hover {
+    background-color: #0056b3;
+}

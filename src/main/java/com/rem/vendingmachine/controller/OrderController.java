@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/order")
@@ -24,19 +25,26 @@ public class OrderController {
      * @param request 订单请求体，把创建订单封装成一个专门的类
      * @return 订单创建结果
      */
+// 修改 OrderController 中的 createOrder
     @PostMapping("/create")
     public String createOrder(@RequestBody CreateOrderRequest request) {
         try {
-            // 获取请求参数
             int userId = request.getUserId();
-            List<Integer> productIds = request.getProductIds();
-            List<Integer> quantities = request.getQuantities();
+            String machineIdStr = request.getMachineId();
+            List<CreateOrderRequest.CartItem> items = request.getItems();
+
+            // 如果需要，可以在这里验证机器ID
+            int machineId = Integer.parseInt(machineIdStr);
+
+            // 如果你还需要从items中构造 productIds 和 quantities
+            List<Integer> productIds = items.stream().map(CreateOrderRequest.CartItem::getProductId).collect(Collectors.toList());
+            List<Integer> quantities = items.stream().map(CreateOrderRequest.CartItem::getQuantity).collect(Collectors.toList());
 
             Order order = new Order();
             order.setUserId(userId);
 
-            // 调用 createOrder（共享逻辑）
-            boolean success = orderService.createOrder(order, productIds, quantities);
+            // 调用顺序修改
+            boolean success = orderService.createOrder(order, items); // 传入items更好
 
             if (success) {
                 return "订单创建成功！订单ID: " + order.getId();
@@ -47,7 +55,6 @@ public class OrderController {
             return "Error: " + e.getMessage();
         }
     }
-
 
     /**
      * 查询某订单详情接口

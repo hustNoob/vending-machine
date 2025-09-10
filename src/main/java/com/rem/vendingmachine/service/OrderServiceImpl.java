@@ -112,29 +112,33 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public boolean createOrder(Order order, List<Integer> productIds, List<Integer> quantities) {
+    public boolean createOrder(Order order, List<CreateOrderRequest.CartItem> items) {
         // 总金额计算
         BigDecimal totalPrice = BigDecimal.ZERO;
 
         // 遍历商品，检查库存并计算总金额
-        for (int i = 0; i < productIds.size(); i++) {
-            int productId = productIds.get(i);
-            int quantity = quantities.get(i);
+        for (CreateOrderRequest.CartItem item : items) {
+            int productId = item.getProductId();
+            int vendingMachineId = item.getVendingMachineId(); // 关键：从item获取机器ID
+            int quantity = item.getQuantity();
 
-            Product product = productMapper.selectProductById(productId);
-            if (product == null) {
-                throw new RuntimeException("商品不存在，商品ID: " + productId);
+            // 🔥 关键修改：使用售货机商品表检查库存
+            VendingMachineProduct vmProduct = vendingMachineProductMapper.selectVendingMachineProduct(
+                    vendingMachineId, productId);
+
+            if (vmProduct == null) {
+                throw new RuntimeException("商品不存在于该售货机，商品ID: " + productId + ", 售货机ID: " + vendingMachineId);
             }
-            if (product.getStock() < quantity) {
-                throw new RuntimeException("库存不足，商品ID: " + productId + "，库存：" + product.getStock());
+            if (vmProduct.getStock() < quantity) {
+                throw new RuntimeException("库存不足，商品ID: " + productId + "，售货机库存：" + vmProduct.getStock());
             }
 
             // 计算小计并累加
-            BigDecimal subtotal = product.getPrice().multiply(BigDecimal.valueOf(quantity));
+            BigDecimal subtotal = vmProduct.getPrice().multiply(BigDecimal.valueOf(quantity));
             totalPrice = totalPrice.add(subtotal);
         }
 
-        // 检查用户余额是否充足（如果需要支付逻辑）
+        // 检查用户余额是否充足
         BigDecimal userBalance = userMapper.getBalanceByUserId(order.getUserId());
         if (userBalance.compareTo(totalPrice) < 0) {
             throw new RuntimeException("余额不足，当前余额：" + userBalance);
@@ -145,20 +149,22 @@ public class OrderServiceImpl implements OrderService {
         order.setCreateTime(LocalDateTime.now());
         orderMapper.insertOrder(order); // 主表插入
 
-        // 插入订单项
-        for (int i = 0; i < productIds.size(); i++) {
-            int productId = productIds.get(i);
-            int quantity = quantities.get(i);
+        // 插入订单项和扣减库存
+        for (CreateOrderRequest.CartItem item : items) {
+            int productId = item.getProductId();
+            int vendingMachineId = item.getVendingMachineId();
+            int quantity = item.getQuantity();
 
-            // 更新库存
-            productMapper.updateStock(productId, -quantity);
+            // 1. 减少售货机库存
+            vendingMachineProductMapper.updateVendingMachineProductStock(
+                    vendingMachineId, productId, -quantity, quantity);
 
-            // 创建订单项
+            // 2. 创建订单项
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(order.getId());
             orderItem.setProductId(productId);
             orderItem.setQuantity(quantity);
-            orderItem.setPrice(productMapper.selectProductById(productId).getPrice());
+            orderItem.setPrice(vendingMachineProductMapper.selectVendingMachineProduct(vendingMachineId, productId).getPrice());
             orderItem.setSubtotal(orderItem.getPrice().multiply(BigDecimal.valueOf(quantity)));
             orderItemMapper.insertOrderItem(orderItem);
         }
@@ -169,6 +175,7 @@ public class OrderServiceImpl implements OrderService {
 
         return true;
     }
+
 
 
     //查询账单所有详细信息
@@ -331,11 +338,10 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.queryOrders(userId, status, machineId);
     }
 
-    // 在OrderServiceImpl中替换原来的方法
     @Override
-    public void processOrderFromMQTT(String orderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items) {
+    public void processOrderFromMQTT(String tempOrderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items) {
         System.out.println("=== 处理完整的MQTT订单 ===");
-        System.out.println("订单ID: " + orderId + ", 用户ID: " + userId + ", 售货机ID: " + vendingMachineId);
+        System.out.println("临时订单ID: " + tempOrderId + ", 用户ID: " + userId + ", 售货机ID: " + vendingMachineId);
         System.out.println("订单商品明细: " + items);
 
         try {
@@ -352,67 +358,72 @@ public class OrderServiceImpl implements OrderService {
                 return;
             }
 
-            // 2. 开始事务处理商品扣减和余额扣减
-            // 3. 创建主订单
-            Order order = new Order();
-            order.setUserId(userId);
-            order.setTotalPrice(totalAmount);
-            order.setCreateTime(LocalDateTime.now());
-            orderMapper.insertOrder(order);
-            System.out.println("【调试】订单创建成功，ID: " + order.getId());
-
-            // 4. 处理订单项
-            BigDecimal total = BigDecimal.ZERO;
+            // 2. 检查库存并创建订单
+            // 先验证所有商品库存是否充足
             for (Map<String, Object> item : items) {
                 int productId = (Integer) item.get("productId");
                 int quantity = (Integer) item.get("quantity");
 
-                // 5. 检查该售货机是否有该商品
+                // 检查该售货机是否有该商品
                 VendingMachineProduct vmProduct = vendingMachineProductMapper.selectVendingMachineProduct(vendingMachineId, productId);
                 if (vmProduct == null) {
                     System.err.println("【错误】售货机 " + vendingMachineId + " 中不存在商品 " + productId);
-                    continue; // 处理下一个商品
+                    return; // 直接返回，不处理订单
                 }
 
-                // 6. 检查库存
+                // 检查库存
                 if (vmProduct.getStock() < quantity) {
                     System.err.println("【错误】商品 " + productId + " 库存不足，需要 " + quantity + "，现有 " + vmProduct.getStock());
-                    continue; // 处理下一个商品
+                    return; // 直接返回，不处理订单
                 }
+            }
 
-                // 7. 扣减库存
+            // 3. 创建主订单 - 使用数据库自增ID
+            Order order = new Order();
+            order.setUserId(userId);
+            order.setTotalPrice(totalAmount);
+            order.setCreateTime(LocalDateTime.now());
+
+            // 插入订单到数据库，获取真实的数据库ID
+            orderMapper.insertOrder(order);
+            int realOrderId = order.getId(); // 获取数据库生成的真实ID
+            System.out.println("【调试】订单创建成功，真实数据库ID: " + realOrderId);
+
+            // 4. 处理订单项和库存扣减
+            for (Map<String, Object> item : items) {
+                int productId = (Integer) item.get("productId");
+                int quantity = (Integer) item.get("quantity");
+
+                // 获取商品信息
+                VendingMachineProduct vmProduct = vendingMachineProductMapper.selectVendingMachineProduct(vendingMachineId, productId);
+
+                // 扣减库存
                 vendingMachineProductMapper.updateVendingMachineProductStock(vendingMachineId, productId, -quantity, quantity);
-                System.out.println("【调试】商品 " + productId + " 库存扣减 " + quantity);
+                System.out.println("【调试】商品 " + productId + " 库存已扣减，减少 " + quantity);
 
-                // 8. 创建订单项
+                // 插入订单项
                 OrderItem orderItem = new OrderItem();
-                orderItem.setOrderId(order.getId());
+                orderItem.setOrderId(realOrderId); // 使用真实的数据库订单ID
                 orderItem.setProductId(productId);
                 orderItem.setQuantity(quantity);
                 orderItem.setPrice(vmProduct.getPrice());
                 orderItem.setSubtotal(vmProduct.getPrice().multiply(BigDecimal.valueOf(quantity)));
                 orderItemMapper.insertOrderItem(orderItem);
-
-                total = total.add(orderItem.getSubtotal());
+                System.out.println("【调试】订单项插入成功");
             }
 
-            // 9. 扣减用户余额
+            // 5. 更新用户余额
             BigDecimal newBalance = userBalance.subtract(totalAmount);
             userMapper.updateBalanceByUserId(userId, newBalance);
-            System.out.println("【调试】用户余额更新成功，新余额: " + newBalance);
+            System.out.println("【调试】用户余额已更新");
 
-            // 10. 标记订单为已支付
-            orderMapper.updatePaymentStatus(order.getId());
-            System.out.println("【调试】订单支付状态已更新");
-
-            System.out.println("【成功】完整订单处理完成 - 订单ID: " + orderId);
+            System.out.println("【成功】MQTT订单处理完成，真实订单ID: " + realOrderId);
 
         } catch (Exception e) {
-            System.err.println("【错误】处理完整订单失败: " + e.getMessage());
+            System.err.println("【错误】处理MQTT订单时发生异常: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
 
 
 }

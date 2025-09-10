@@ -1,6 +1,7 @@
 package com.rem.vendingmachine.service;
 
 import com.rem.vendingmachine.model.CheckoutRequest;
+import com.rem.vendingmachine.model.CreateOrderRequest;
 import com.rem.vendingmachine.model.Order;
 
 import java.util.List;
@@ -12,7 +13,8 @@ public interface OrderService {
     boolean createOrder(int userId, List<CheckoutRequest.CartItem> cartItems);
 
     // 创建订单（支持直接手动指定的商品ID和数量）
-    boolean createOrder(Order order, List<Integer> productIds, List<Integer> quantities);
+    // 修改 OrderService 接口
+    boolean createOrder(Order order, List<CreateOrderRequest.CartItem> items); // 现在传完整信息
 
     // 查询单个订单详情
     Order getOrderById(int orderId);
@@ -40,8 +42,7 @@ public interface OrderService {
 
     public List<Order> queryOrders(Integer userId, Integer status, Integer machineId);
 
-    // 在OrderService接口中添加
-    void processOrderFromMQTT(String orderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items);
+    void processOrderFromMQTT(String tempOrderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items);
 
 
 }

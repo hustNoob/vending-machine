@@ -45,7 +45,7 @@ function loadVendingMachines() {
         .catch(error => console.error('Error loading vending machines:', error));
 }
 
-// 加载用户信息
+// 修改 loadUserInfo 函数，添加推荐商品加载
 function loadUserInfo() {
     const userId = document.getElementById('userSelect').value;
     fetch(`/api/user/id/${userId}`)
@@ -53,6 +53,7 @@ function loadUserInfo() {
         .then(user => {
             document.getElementById('userBalance').innerText = user.balance;
             loadUserOrders(userId);
+            loadRecommendedProducts(userId); // 加载推荐商品
         })
         .catch(error => console.error('Error loading user info:', error));
 }
@@ -215,8 +216,6 @@ function removeFromCart(productId) {
     updateCart();
 }
 
-// 执行结账流程 - 增强版
-// 替换原来的checkout()方法
 function checkout() {
     const userId = parseInt(document.getElementById('userSelect').value, 10);
     const machineId = document.getElementById('machineSelect').value;
@@ -236,33 +235,33 @@ function checkout() {
         return;
     }
 
-    // 生成订单ID
-    const orderId = "ORDER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    // 直接通过MQTT发送订单信息（不通过API创建订单）
+    // 使用时间戳作为临时订单ID，MQTT接收端会处理并生成真实的数据库订单
+    const tempOrderId = "TEMP_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    const totalPrice = cart.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
-    // 构造订单数据（现在包含商品详情）
-    const orderItems = cart.map(item => ({
-        productId: item.productId,
-        vendingMachineId: item.vendingMachineId,
-        quantity: item.quantity
-    }));
-
+    // 构造MQTT消息
     const orderPayload = {
-        orderId: orderId,
+        orderId: tempOrderId, // 临时ID，MQTT端会替换为真实ID
         userId: userId,
         machineId: machineId,
-        totalPrice: cart.reduce((sum, item) => sum + (item.quantity * item.price), 0),
-        items: orderItems // 添加商品详情
+        totalPrice: totalPrice,
+        items: cart.map(item => ({
+            productId: item.productId,
+            vendingMachineId: item.vendingMachineId,
+            quantity: item.quantity
+        })),
+        timestamp: new Date().toISOString(),
+        source: "web" // 标记来源
     };
 
-    console.log("准备发送订单数据:", orderPayload);
+    console.log("即将通过MQTT发送订单:", orderPayload);
 
-    // 通过后端发送MQTT订单消息
+    // 通过后端API发送MQTT消息到指定主题
     const publishData = {
-        topic: "vendingmachine/order/" + orderId,
+        topic: "vendingmachine/order/" + tempOrderId,
         payload: JSON.stringify(orderPayload)
     };
-
-    console.log("准备发送到MQTT的完整数据:", publishData);
 
     fetch('/api/test-publish', {
         method: "POST",
@@ -271,9 +270,8 @@ function checkout() {
     })
         .then(response => response.text())
         .then(message => {
-            console.log("后端响应内容:", message);
-            alert("订单已提交，正在处理中...");
             console.log("MQTT订单发送成功:", message);
+            alert("订单已提交，正在处理中...");
 
             // 清空购物车
             cart = [];
@@ -283,11 +281,65 @@ function checkout() {
             loadProducts();
             loadUserInfo();
 
-            console.log("订单已通过MQTT上报:", orderPayload);
+            console.log("订单已通过MQTT上报");
         })
         .catch(error => {
-            console.error("发送MQTT订单消息失败：", error);
+            console.error("MQTT订单发送失败：", error);
             alert("订单提交失败，请重试！");
         });
 }
 
+// 添加推荐商品加载函数
+function loadRecommendedProducts(userId) {
+    fetch(`/api/user/recommend/${userId}`)
+        .then(response => response.json())
+        .then(products => {
+            const recommendedDiv = document.getElementById('recommendedProducts');
+            if (recommendedDiv) {
+                recommendedDiv.innerHTML = ''; // 清空
+
+                if (products && products.length > 0) {
+                    products.forEach(product => {
+                        const div = document.createElement('div');
+                        div.className = 'product';
+                        div.innerHTML = `
+                            <p>${product.name}</p>
+                            <p>价格: ¥${product.price.toFixed(2)}</p>
+                            <button onclick='addToRecommendedCart(${product.id}, "${product.name}", ${product.price})'>推荐购买</button>
+                        `;
+                        recommendedDiv.appendChild(div);
+                    });
+                } else {
+                    recommendedDiv.innerHTML = '<p>暂无推荐商品</p>';
+                }
+            }
+        })
+        .catch(error => console.error('Error loading recommended products:', error));
+}
+
+// 添加推荐商品购物车函数
+function addToRecommendedCart(productId, productName, price) {
+    const machineId = document.getElementById('machineSelect').value;
+
+    // 先获取商品库存信息
+    fetch(`/api/vending-machine-product/${machineId}/products`)
+        .then(response => response.json())
+        .then(products => {
+            const product = products.find(p => p.productId === productId);
+            if (product) {
+                addToCart({
+                    productId: productId,
+                    productName: productName,
+                    price: price,
+                    stock: product.stock,
+                    vendingMachineId: machineId
+                });
+            } else {
+                alert("该商品在当前售货机中无库存！");
+            }
+        })
+        .catch(error => {
+            console.error('Error checking product stock:', error);
+            alert("无法获取商品库存信息！");
+        });
+}

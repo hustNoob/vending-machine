@@ -18,13 +18,24 @@ public class MqttController {
     // 获取 MQTT 消息记录
     @GetMapping("/data")
     public List<MqttLog> getLogs(@RequestParam String type) {
+        if ("order".equals(type)) {
+            return mqttSubscriberService.getAllOrderLogs(); // 返回所有订单消息
+        }
         return mqttSubscriberService.getLogs(type);
     }
+
 
     // --- 获取所有设备快照 ---
     @GetMapping("/devices")
     public Collection<MqttSubscriberService.DeviceSnapshot> getDeviceSnapshots() {
         return mqttSubscriberService.getAllDeviceSnapshotsComprehensive(); // 新方法
     }
+
+    // 在 MqttController 中添加新方法
+    @GetMapping("/processed-orders")
+    public List<MqttLog> getProcessedOrders() {
+        return mqttSubscriberService.getProcessedOrders();
+    }
+
 
 }
