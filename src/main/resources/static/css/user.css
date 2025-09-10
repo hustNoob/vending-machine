@@ -145,6 +145,16 @@
     background-color: #c82333;
 }
 
+/* 新增的余额修改按钮 */
+.user-list .balance-button {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.user-list .balance-button:hover {
+    background-color: #e0a800;
+}
+
 /* 编辑状态下的按钮组 */
 .edit-buttons {
     display: flex;

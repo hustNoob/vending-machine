@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无人售货机管理系统</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<!-- 页面容器 -->
+<div class="container">
+    <!-- 左侧导航栏 -->
+    <aside class="sidebar">
+        <h2>切换用户</h2>
+        <select id="userSelect"></select>
+        <h2>售货机</h2>
+        <select id="machineSelect"></select>
+
+        <hr>
+        <button onclick="window.location.href='user.html'" class="big-button">用户管理</button>
+        <button onclick="window.location.href='product.html'" class="big-button">商品管理</button>
+        <button onclick="window.location.href='order.html'" class="big-button">订单管理</button>
+        <button onclick="window.location.href='mqtt.html'" class="big-button">MQTT 控制</button>
+        <button onclick="window.location.href='vending-machine.html'" class="big-button">售货机管理</button>
+    </aside>
+
+    <!-- 中间商品展示区域 -->
+    <main class="content">
+        <h1>商品列表</h1>
+        <!-- 推荐商品展示 -->
+        <div id="recommendedProducts">
+            <!-- 商品列表动态生成 -->
+        </div>
+
+        <!-- 购物车 -->
+        <div id="cart">
+            <h3>购物车</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>商品名称</th>
+                    <th>单价</th>
+                    <th>数量</th>
+                    <th>总价</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="cartItems">
+                <!-- 动态加载购物车内容 -->
+                </tbody>
+            </table>
+            <button id="checkoutButton" onclick="checkout()">去付款</button>
+        </div>
+
+    </main>
+</div>
+</body>
+</html>

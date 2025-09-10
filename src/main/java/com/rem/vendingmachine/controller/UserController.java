@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -96,5 +97,37 @@ public class UserController {
     @GetMapping("/recommend/{userId}")
     public List<Product> getRecommendedProducts(@PathVariable int userId) {
         return userService.getRecommendedProducts(userId);
+    }
+
+    /**
+     * 更新用户余额接口（新增）
+     * @param userId 用户ID
+     * @param balance 新余额
+     * @return 更新结果
+     */
+    @PutMapping("/update-balance/{userId}")
+    public String updateUserBalance(@PathVariable int userId, @RequestParam double balance) {
+        try {
+            // 验证余额不能为负数
+            if (balance < 0) {
+                return "余额不能为负数";
+            }
+
+            // 获取当前用户信息
+            User currentUser = userService.getUserByUserId(userId);
+            if (currentUser == null) {
+                return "用户不存在";
+            }
+
+            // 更新用户余额
+            currentUser.setBalance(BigDecimal.valueOf(balance));
+            if (userService.updateUser(currentUser)) {
+                return "用户余额更新成功";
+            } else {
+                return "用户余额更新失败";
+            }
+        } catch (Exception e) {
+            return "更新用户余额失败: " + e.getMessage();
+        }
     }
 }

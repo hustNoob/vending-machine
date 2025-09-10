@@ -3,6 +3,7 @@ package com.rem.vendingmachine.service;
 import com.rem.vendingmachine.model.Product;
 import com.rem.vendingmachine.model.User;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface UserService {
@@ -21,4 +22,6 @@ public interface UserService {
     boolean deleteUserById(int userId);
 
     List<Product> getRecommendedProducts(int userId);
+
+    boolean updateUserBalance(int userId, BigDecimal balance);
 }

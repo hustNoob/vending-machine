@@ -9,13 +9,14 @@ window.onload = function () {
     };
 };
 
-// 加载用户列表
+// 用户列表加载
 function loadUsers() {
     fetch('/api/user/all')
         .then(response => response.json())
         .then(users => {
             const userList = document.getElementById("userList");
             userList.innerHTML = ''; // 清空列表
+
             users.forEach(user => {
                 const row = document.createElement("tr");
                 row.setAttribute('data-user-id', user.id);
@@ -31,7 +32,7 @@ function loadUsers() {
                     </td>
                     <td>
                         <div class="normal-buttons">
-                            <button class="action-button edit-button" onclick="editUser(${user.id})">编辑</button>
+                            <button class="action-button balance-button" onclick="updateUserBalance(${user.id})">修改余额</button>
                             <button class="action-button delete-button" onclick="deleteUser(${user.id})">删除</button>
                         </div>
                         <div class="edit-buttons" style="display: none;">
@@ -139,34 +140,37 @@ function deleteUser(userId) {
         fetch(`/api/user/delete/${userId}`, {
             method: 'DELETE'
         })
-            .then(response => {
-                // 检查响应是否成功
-                if (!response.ok) {
-                    // 直接读取响应文本，而不是尝试解析 JSON（因为可能不是 JSON）
-                    return response.text().then(text => {
-                        // 如果返回的是文本错误信息（我们的业务异常）
-                        if (text.includes("无法删除用户")) {
-                            throw new Error(text); // 抛出一个包含业务错误的消息的 Error 对象
-                        } else {
-                            // 其他非业务异常的错误（可能是 500 错误等）
-                            throw new Error(`删除失败: ${response.status} ${response.statusText}`);
-                        }
-                    });
-                }
-                // 成功的话，返回默认消息
-                return response.text();
-            })
+            .then(response => response.text())
             .then(message => {
-                alert(message); // 显示从后端返回的文本消息
+                alert(message);
                 loadUsers(); // 重新加载用户列表
             })
-            .catch(error => {
-                console.error('Error deleting user:', error);
-                if (error.message) {
-                    alert(error.message); // 显示业务错误信息，或通用错误
-                } else {
-                    alert('删除用户失败');
-                }
-            });
+            .catch(error => console.error('Error deleting user:', error));
     }
+}
+
+// 修改用户余额的函数
+function updateUserBalance(userId) {
+    const newBalance = prompt("请输入新的余额:");
+    if (newBalance === null) return; // 用户取消了
+
+    const balance = parseFloat(newBalance);
+    if (isNaN(balance) || balance < 0) {
+        alert("请输入有效的非负数余额");
+        return;
+    }
+
+    fetch(`/api/user/update-balance/${userId}?balance=${balance}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+    })
+        .then(response => response.text())
+        .then(message => {
+            alert(message);
+            loadUsers(); // 重新加载用户列表
+        })
+        .catch(error => {
+            console.error('Error updating user balance:', error);
+            alert('更新用户余额失败');
+        });
 }

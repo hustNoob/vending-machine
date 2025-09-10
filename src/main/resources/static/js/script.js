@@ -402,56 +402,75 @@ function checkout() {
         return;
     }
 
-    // 直接通过MQTT发送订单信息（不通过API创建订单）
-    // 使用时间戳作为临时订单ID，MQTT接收端会处理并生成真实的数据库订单
-    const tempOrderId = "TEMP_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    // 计算总价
     const totalPrice = cart.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
-    // 构造MQTT消息
-    const orderPayload = {
-        orderId: tempOrderId, // 临时ID，MQTT端会替换为真实ID
-        userId: userId,
-        machineId: machineId,
-        totalPrice: totalPrice,
-        items: cart.map(item => ({
-            productId: item.productId,
-            vendingMachineId: item.vendingMachineId,
-            quantity: item.quantity
-        })),
-        timestamp: new Date().toISOString(),
-        source: "web" // 标记来源
-    };
+    // 获取当前用户余额
+    fetch(`/api/user/id/${userId}`)
+        .then(response => response.json())
+        .then(user => {
+            const userBalance = user.balance;
 
-    console.log("即将通过MQTT发送订单:", orderPayload);
+            // 检查余额是否足够
+            if (userBalance < totalPrice) {
+                alert("余额不足请充值");
+                return;
+            }
 
-    // 通过后端API发送MQTT消息到指定主题
-    const publishData = {
-        topic: "vendingmachine/order/" + tempOrderId,
-        payload: JSON.stringify(orderPayload)
-    };
+            // 余额足够，继续执行购买流程
+            // 使用时间戳作为临时订单ID
+            const tempOrderId = "TEMP_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
-    fetch('/api/test-publish', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(publishData)
-    })
-        .then(response => response.text())
-        .then(message => {
-            console.log("MQTT订单发送成功:", message);
-            alert("订单已提交，正在处理中...");
+            // 构造MQTT消息
+            const orderPayload = {
+                orderId: tempOrderId,
+                userId: userId,
+                machineId: machineId,
+                totalPrice: totalPrice,
+                items: cart.map(item => ({
+                    productId: item.productId,
+                    vendingMachineId: item.vendingMachineId,
+                    quantity: item.quantity
+                })),
+                timestamp: new Date().toISOString(),
+                source: "web"
+            };
 
-            // 清空购物车
-            cart = [];
-            updateCart();
+            console.log("即将通过MQTT发送订单:", orderPayload);
 
-            // 重新加载商品和用户信息
-            loadUserInfo();
+            // 通过后端API发送MQTT消息到指定主题
+            const publishData = {
+                topic: "vendingmachine/order/" + tempOrderId,
+                payload: JSON.stringify(orderPayload)
+            };
 
-            console.log("订单已通过MQTT上报");
+            fetch('/api/test-publish', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(publishData)
+            })
+                .then(response => response.text())
+                .then(message => {
+                    console.log("MQTT订单发送成功:", message);
+                    alert("订单已提交，正在处理中...");
+
+                    // 清空购物车
+                    cart = [];
+                    updateCart();
+
+                    // 重新加载商品和用户信息
+                    loadUserInfo();
+
+                    console.log("订单已通过MQTT上报");
+                })
+                .catch(error => {
+                    console.error("MQTT订单发送失败：", error);
+                    alert("订单提交失败，请重试！");
+                });
         })
         .catch(error => {
-            console.error("MQTT订单发送失败：", error);
-            alert("订单提交失败，请重试！");
+            console.error("获取用户信息失败：", error);
+            alert("获取用户信息失败");
         });
 }
 

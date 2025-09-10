@@ -9,6 +9,7 @@ import com.rem.vendingmachine.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -118,6 +119,11 @@ public class UserServiceImpl implements UserService {
         }
 
         return recommendedProducts;
+    }
+
+    @Override
+    public boolean updateUserBalance(int userId, BigDecimal balance) {
+        return userMapper.updateBalanceByUserId(userId, balance) > 0;
     }
 
 }
