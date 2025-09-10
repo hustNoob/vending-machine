@@ -1,11 +1,13 @@
+// 定义购物车 - 全局变量
+let cart = [];
+
 // 初始化
 window.onload = function () {
     loadUsers();
     loadVendingMachines();
+    updateCart(); // 初始加载购物车为空状态
+    bindCartButtonEvents(); // 绑定购物车按钮事件
 };
-
-// 定义购物车
-let cart = []; // 用于存储购物车中的商品信息
 
 // 加载用户列表
 function loadUsers() {
@@ -39,7 +41,12 @@ function loadVendingMachines() {
                 machineSelect.appendChild(option);
             });
             // 加载默认售货机的商品
-            machineSelect.onchange = loadProducts;
+            machineSelect.onchange = function() {
+                const userId = document.getElementById('userSelect').value;
+                if (userId) {
+                    loadUserInfo(); // 重新加载用户信息和推荐商品
+                }
+            };
             machineSelect.onchange();
         })
         .catch(error => console.error('Error loading vending machines:', error));
@@ -48,6 +55,10 @@ function loadVendingMachines() {
 // 修改 loadUserInfo 函数
 function loadUserInfo() {
     const userId = document.getElementById('userSelect').value;
+    const machineId = document.getElementById('machineSelect').value;
+
+    if (!userId || !machineId) return;
+
     fetch(`/api/user/id/${userId}`)
         .then(response => response.json())
         .then(user => {
@@ -184,55 +195,7 @@ function loadProductSalesRanking() {
         });
 }
 
-
-// 加载用户订单
-function loadUserOrders(userId) {
-    fetch(`/api/order/user/${userId}`)
-        .then(response => response.json())
-        .then(orders => {
-            const orderList = document.getElementById('orderList');
-            orderList.innerHTML = ''; // 清空
-            orders.forEach(order => {
-                const div = document.createElement('div');
-                div.innerText = `订单 #${order.id} - 总价: ${order.totalPrice}`;
-                orderList.appendChild(div);
-            });
-        })
-        .catch(error => console.error('Error loading orders:', error));
-}
-
-// 加载商品列表（绑定购买按钮）
-function loadProducts() {
-    const machineId = document.getElementById('machineSelect').value; // 获取当前选择的售货机ID
-    fetch(`/api/vending-machine-product/${machineId}/products`) // 修正了API地址
-        .then(response => response.json())
-        .then(products => {
-            const productsDiv = document.getElementById('products');
-            productsDiv.innerHTML = ''; // 清空
-
-            products.forEach(product => {
-                const div = document.createElement('div');
-                div.className = 'product';
-                // Pass machineId along with product info
-                div.innerHTML = `
-                  <p>${product.productName}</p>
-                  <p>价格: ${product.price}</p>
-                  <p>库存: ${product.stock}</p>
-                  <button onclick='addToCart({
-                      productId: ${product.productId}, 
-                      productName: "${product.productName}", 
-                      price: ${product.price}, 
-                      stock: ${product.stock}, 
-                      vendingMachineId: ${machineId} // 传递售货机 ID
-                  })'>购买</button>
-                `;
-                productsDiv.appendChild(div);
-            });
-        })
-        .catch(error => console.error('Error loading products:', error));
-}
-
-// 添加商品到购物车
+// 修复后的添加商品到购物车函数
 function addToCart(product) {
     console.log("购买商品：", product); // 调试日志
 
@@ -245,8 +208,9 @@ function addToCart(product) {
     // 如果购物车中存在该商品（在同一台售货机上），更新其数量
     const existingItem = cart.find(item =>
         item.productId === product.productId &&
-        item.vendingMachineId === product.vendingMachineId // Ensure same machine
+        item.vendingMachineId === product.vendingMachineId
     );
+
     if (existingItem) {
         if (existingItem.quantity + 1 > product.stock) {
             alert("库存不足，无法添加更多商品！");
@@ -271,26 +235,34 @@ function addToCart(product) {
     updateCart(); // 更新购物车界面
 }
 
-// 更新购物车显示
+// 修复后的更新购物车显示函数
 function updateCart() {
     const cartItems = document.getElementById("cartItems");
     cartItems.innerHTML = ""; // 清空购物车内容
 
+    if (cart.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="5">购物车为空</td>';
+        cartItems.appendChild(row);
+        return;
+    }
+
     let total = 0; // 总金额
-    cart.forEach(item => {
+    cart.forEach((item, index) => {
         total += item.quantity * item.price;
         const row = document.createElement('tr');
+        // 给每个按钮添加唯一的 data 属性
         row.innerHTML = `
             <td>${item.name}</td>
             <td>${item.price.toFixed(2)}</td>
             <td>
-                <button onclick="changeQuantity(${item.productId}, -1)">-</button>
+                <button class="cart-btn" data-action="decrease" data-product-id="${item.productId}">-</button>
                 ${item.quantity}
-                <button onclick="changeQuantity(${item.productId}, 1)">+</button>
+                <button class="cart-btn" data-action="increase" data-product-id="${item.productId}">+</button>
             </td>
             <td>${(item.quantity * item.price).toFixed(2)}</td>
             <td>
-                <button onclick="removeFromCart(${item.productId})">移除</button>
+                <button class="cart-btn" data-action="remove" data-product-id="${item.productId}">移除</button>
             </td>
         `;
         cartItems.appendChild(row);
@@ -303,35 +275,73 @@ function updateCart() {
         <td colspan="2">${total.toFixed(2)}</td>
     `;
     cartItems.appendChild(totalRow);
+
+    // 重新绑定事件监听器
+    bindCartButtonEvents();
 }
 
-// 更新购物车数量
+// 绑定购物车按钮事件
+function bindCartButtonEvents() {
+    // 移除之前可能存在的事件监听器，防止重复绑定
+    document.removeEventListener('click', handleCartButtonClick);
+
+    // 添加新的事件监听器
+    document.addEventListener('click', handleCartButtonClick);
+}
+
+// 处理购物车按钮点击事件
+function handleCartButtonClick(e) {
+    if (e.target.classList.contains('cart-btn')) {
+        const action = e.target.getAttribute('data-action');
+        const productId = parseInt(e.target.getAttribute('data-product-id'));
+
+        if (productId) {
+            switch(action) {
+                case 'decrease':
+                    changeQuantity(productId, -1);
+                    break;
+                case 'increase':
+                    changeQuantity(productId, 1);
+                    break;
+                case 'remove':
+                    removeFromCart(productId);
+                    break;
+            }
+        }
+    }
+}
+
+// 修复后的更新购物车数量函数
 function changeQuantity(productId, change) {
     // 获取当前售货机 ID
     const vendingMachineId = parseInt(document.getElementById('machineSelect').value, 10);
 
-    const item = cart.find(item =>
+    // 查找购物车中的商品
+    const itemIndex = cart.findIndex(item =>
         item.productId === productId &&
         item.vendingMachineId === vendingMachineId
     );
 
-    if (!item) {
-        console.warn("未在购物车中找到指定商品（售货机不匹配？）");
+    if (itemIndex === -1) {
+        console.warn("未在购物车中找到指定商品");
         return;
     }
+
+    const item = cart[itemIndex];
     const newQuantity = item.quantity + change;
 
     if (newQuantity <= 0) {
-        removeFromCart(productId); // 这里调用的是修改后的 removeFromCart
+        // 如果数量为0或负数，移除商品
+        removeFromCart(productId);
     } else if (newQuantity > item.stock) {
         alert("库存不足，无法增加更多商品！");
     } else {
         item.quantity = newQuantity;
+        updateCart();
     }
-    updateCart();
 }
 
-// 从购物车移除商品
+// 修复后的从购物车移除商品函数
 function removeFromCart(productId) {
     // 获取当前售货机 ID
     const vendingMachineId = parseInt(document.getElementById('machineSelect').value, 10);
@@ -405,7 +415,6 @@ function checkout() {
             updateCart();
 
             // 重新加载商品和用户信息
-            loadProducts();
             loadUserInfo();
 
             console.log("订单已通过MQTT上报");
@@ -416,7 +425,6 @@ function checkout() {
         });
 }
 
-// 修改推荐商品加载函数，修复排版和显示问题
 function loadRecommendedProducts(userId) {
     const machineId = document.getElementById('machineSelect').value;
 
@@ -439,7 +447,6 @@ function loadRecommendedProducts(userId) {
         })
         .then(({ products, stockMap }) => {
             const recommendedDiv = document.getElementById('recommendedProducts');
-            recommendedDiv.innerHTML = ''; // 清空
 
             if (products && products.length > 0) {
                 products.forEach(product => {
@@ -452,44 +459,22 @@ function loadRecommendedProducts(userId) {
                         <p>${product.name}</p>
                         <p>价格: ¥${product.price.toFixed(2)}</p>
                         <p>库存: ${stock}</p>
-                        <button onclick='addToRecommendedCart(${product.id}, "${product.name}", ${product.price})'>购买</button>
+                        <button onclick='addToCart({
+                            productId: ${product.id},
+                            productName: "${product.name}",
+                            price: ${product.price},
+                            stock: ${stock},
+                            vendingMachineId: ${machineId}
+                        })'>购买</button>
                     `;
                     recommendedDiv.appendChild(div);
                 });
             } else {
-                recommendedDiv.innerHTML = '<p>暂无推荐商品</p>';
+                recommendedDiv.innerHTML += '<p>暂无推荐商品</p>';
             }
         })
         .catch(error => {
             console.error('Error loading recommended products:', error);
             document.getElementById('recommendedProducts').innerHTML = '<p>加载失败</p>';
-        });
-}
-
-
-// 添加推荐商品购物车函数
-function addToRecommendedCart(productId, productName, price) {
-    const machineId = document.getElementById('machineSelect').value;
-
-    // 先获取商品库存信息
-    fetch(`/api/vending-machine-product/${machineId}/products`)
-        .then(response => response.json())
-        .then(products => {
-            const product = products.find(p => p.productId === productId);
-            if (product) {
-                addToCart({
-                    productId: productId,
-                    productName: productName,
-                    price: price,
-                    stock: product.stock,
-                    vendingMachineId: machineId
-                });
-            } else {
-                alert("该商品在当前售货机中无库存！");
-            }
-        })
-        .catch(error => {
-            console.error('Error checking product stock:', error);
-            alert("无法获取商品库存信息！");
         });
 }
