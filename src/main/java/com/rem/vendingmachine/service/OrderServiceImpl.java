@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -423,6 +424,19 @@ public class OrderServiceImpl implements OrderService {
             System.err.println("【错误】处理MQTT订单时发生异常: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    // 在 OrderServiceImpl.java 中添加实现
+    @Override
+    public List<Map<String, Object>> getTopSellingProductsWithQuantities() {
+        return orderItemMapper.getTopSellingProductsWithQuantities();
+    }
+
+    // 添加辅助方法获取商品销量
+    private int getProductSalesQuantity(int productId) {
+        // 这里需要在 OrderItemMapper 中添加新的SQL查询
+        // 暂时返回0，稍后实现
+        return 0;
     }
 
 

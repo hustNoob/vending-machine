@@ -191,4 +191,13 @@ public class OrderController {
         }
     }
 
+    @GetMapping("/top-selling")
+    public List<Integer> getTopSellingProducts() {
+        return orderService.getTopSellingProducts();
+    }
+
+    @GetMapping("/top-selling-with-quantities")
+    public List<Map<String, Object>> getTopSellingProductsWithQuantities() {
+        return orderService.getTopSellingProductsWithQuantities();
+    }
 }

@@ -38,5 +38,13 @@
         ORDER BY SUM(quantity) DESC
     </select>
 
+    <select id="getTopSellingProductsWithQuantities" resultType="map">
+        SELECT
+            product_id as productId,
+            SUM(quantity) as quantity
+        FROM order_item
+        GROUP BY product_id
+        ORDER BY SUM(quantity) DESC
+    </select>
 
 </mapper>

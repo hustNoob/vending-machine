@@ -45,18 +45,145 @@ function loadVendingMachines() {
         .catch(error => console.error('Error loading vending machines:', error));
 }
 
-// 修改 loadUserInfo 函数，添加推荐商品加载
+// 修改 loadUserInfo 函数
 function loadUserInfo() {
     const userId = document.getElementById('userSelect').value;
     fetch(`/api/user/id/${userId}`)
         .then(response => response.json())
         .then(user => {
             document.getElementById('userBalance').innerText = user.balance;
-            loadUserOrders(userId);
+            loadUserPurchaseStats(userId); // 加载用户购买统计
+            loadProductSalesRanking(); // 加载商品销量排行
             loadRecommendedProducts(userId); // 加载推荐商品
         })
         .catch(error => console.error('Error loading user info:', error));
 }
+
+// 加载用户购买统计
+function loadUserPurchaseStats(userId) {
+    fetch(`/api/order/user/${userId}`)
+        .then(response => response.json())
+        .then(orders => {
+            const statsDiv = document.getElementById('userPurchaseStats');
+            statsDiv.innerHTML = ''; // 清空
+
+            if (orders && orders.length > 0) {
+                // 统计用户购买的商品数量
+                const productStats = {};
+                orders.forEach(order => {
+                    if (order.orderItems) {
+                        order.orderItems.forEach(item => {
+                            if (productStats[item.productId]) {
+                                productStats[item.productId].quantity += item.quantity;
+                            } else {
+                                productStats[item.productId] = {
+                                    productId: item.productId,
+                                    productName: item.productName,
+                                    quantity: item.quantity
+                                };
+                            }
+                        });
+                    }
+                });
+
+                // 按数量排序
+                const sortedStats = Object.values(productStats).sort((a, b) => b.quantity - a.quantity);
+
+                if (sortedStats.length > 0) {
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>商品名称</th>
+                                <th>购买数量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedStats.map(stat => `
+                                <tr>
+                                    <td>${stat.productName}</td>
+                                    <td>${stat.quantity}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                    statsDiv.appendChild(table);
+                } else {
+                    statsDiv.innerHTML = '<p>暂无购买记录</p>';
+                }
+            } else {
+                statsDiv.innerHTML = '<p>暂无购买记录</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading user purchase stats:', error);
+            document.getElementById('userPurchaseStats').innerHTML = '<p>加载失败</p>';
+        });
+}
+
+// 修改商品销量排行函数，显示具体销量
+function loadProductSalesRanking() {
+    // 获取全局热销商品及其销量
+    fetch('/api/order/top-selling-with-quantities')
+        .then(response => response.json())
+        .then(salesData => {
+            const rankingDiv = document.getElementById('productSalesRanking');
+            rankingDiv.innerHTML = ''; // 清空
+
+            if (salesData && salesData.length > 0) {
+                // 获取所有商品信息
+                fetch('/api/product/all')
+                    .then(response => response.json())
+                    .then(allProducts => {
+                        // 创建商品ID到商品对象的映射
+                        const productMap = {};
+                        allProducts.forEach(product => {
+                            productMap[product.id] = product;
+                        });
+
+                        // 构建排行榜显示
+                        const rankingHtml = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>排名</th>
+                                        <th>商品名称</th>
+                                        <th>价格</th>
+                                        <th>销量</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${salesData.map((item, index) => {
+                            const product = productMap[item.productId];
+                            return product ? `
+                                            <tr>
+                                                <td>${index + 1}</td>
+                                                <td>${product.name}</td>
+                                                <td>¥${product.price.toFixed(2)}</td>
+                                                <td>${item.quantity}</td>
+                                            </tr>
+                                        ` : '';
+                        }).join('')}
+                                </tbody>
+                            </table>
+                        `;
+
+                        rankingDiv.innerHTML = rankingHtml;
+                    })
+                    .catch(error => {
+                        console.error('Error loading products:', error);
+                        rankingDiv.innerHTML = '<p>加载失败</p>';
+                    });
+            } else {
+                rankingDiv.innerHTML = '<p>暂无销量数据</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading product sales ranking:', error);
+            document.getElementById('productSalesRanking').innerHTML = '<p>加载失败</p>';
+        });
+}
+
 
 // 加载用户订单
 function loadUserOrders(userId) {
@@ -289,33 +416,56 @@ function checkout() {
         });
 }
 
-// 添加推荐商品加载函数
+// 修改推荐商品加载函数，修复排版和显示问题
 function loadRecommendedProducts(userId) {
-    fetch(`/api/user/recommend/${userId}`)
-        .then(response => response.json())
-        .then(products => {
-            const recommendedDiv = document.getElementById('recommendedProducts');
-            if (recommendedDiv) {
-                recommendedDiv.innerHTML = ''; // 清空
+    const machineId = document.getElementById('machineSelect').value;
 
-                if (products && products.length > 0) {
-                    products.forEach(product => {
-                        const div = document.createElement('div');
-                        div.className = 'product';
-                        div.innerHTML = `
-                            <p>${product.name}</p>
-                            <p>价格: ¥${product.price.toFixed(2)}</p>
-                            <button onclick='addToRecommendedCart(${product.id}, "${product.name}", ${product.price})'>推荐购买</button>
-                        `;
-                        recommendedDiv.appendChild(div);
-                    });
-                } else {
-                    recommendedDiv.innerHTML = '<p>暂无推荐商品</p>';
-                }
+    // 先获取当前售货机的商品库存信息
+    fetch(`/api/vending-machine-product/${machineId}/products`)
+        .then(response => response.json())
+        .then(machineProducts => {
+            // 创建商品ID到库存的映射
+            const stockMap = {};
+            machineProducts.forEach(p => {
+                stockMap[p.productId] = p.stock;
+            });
+
+            // 获取推荐商品
+            return fetch(`/api/user/recommend/${userId}`)
+                .then(response => response.json())
+                .then(products => {
+                    return { products, stockMap };
+                });
+        })
+        .then(({ products, stockMap }) => {
+            const recommendedDiv = document.getElementById('recommendedProducts');
+            recommendedDiv.innerHTML = ''; // 清空
+
+            if (products && products.length > 0) {
+                products.forEach(product => {
+                    // 获取该商品在当前售货机中的库存
+                    const stock = stockMap[product.id] || 0;
+
+                    const div = document.createElement('div');
+                    div.className = 'product';
+                    div.innerHTML = `
+                        <p>${product.name}</p>
+                        <p>价格: ¥${product.price.toFixed(2)}</p>
+                        <p>库存: ${stock}</p>
+                        <button onclick='addToRecommendedCart(${product.id}, "${product.name}", ${product.price})'>购买</button>
+                    `;
+                    recommendedDiv.appendChild(div);
+                });
+            } else {
+                recommendedDiv.innerHTML = '<p>暂无推荐商品</p>';
             }
         })
-        .catch(error => console.error('Error loading recommended products:', error));
+        .catch(error => {
+            console.error('Error loading recommended products:', error);
+            document.getElementById('recommendedProducts').innerHTML = '<p>加载失败</p>';
+        });
 }
+
 
 // 添加推荐商品购物车函数
 function addToRecommendedCart(productId, productName, price) {
