@@ -184,18 +184,12 @@ public class OrderServiceImpl implements OrderService {
     public Order getOrderWithDetailsById(int orderId) {
         Order order = orderMapper.selectOrderById(orderId);
 
-        if (order != null) {
-            List<OrderItem> items = order.getOrderItems();
-            if (items != null) { // 判空处理
-                for (OrderItem item : items) {
-                    // 查询并注入商品名称
-                    String productName = productMapper.selectProductNameById(item.getProductId());
-                    item.setProductName(productName);
-                }
-            } else {
-                order.setOrderItems(new ArrayList<>()); // 如果为空，则初始化空列表
-            }
+        // 不再需要手动设置商品名称，因为已经在SQL查询中关联了
+
+        if (order != null && order.getOrderItems() == null) {
+            order.setOrderItems(new ArrayList<>()); // 如果为空，则初始化空列表
         }
+
         return order;
     }
 

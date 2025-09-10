@@ -15,4 +15,6 @@ public interface OrderItemMapper {
     List<Integer> getTopSellingProducts(); //查询系统热销商品的id
 
     List<Map<String, Object>> getTopSellingProductsWithQuantities();
+
+    int countOrderItemsByProductId(@Param("productId") int productId);
 }

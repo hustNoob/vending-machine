@@ -52,11 +52,34 @@ function createProduct() {
 
 // 删除商品
 function deleteProduct(productId) {
-    fetch(`/api/product/delete/${productId}`, { method: 'DELETE' })
-        .then(response => response.text())
-        .then(message => {
-            alert(message); // 提示删除结果
-            loadProducts(); // 更新商品列表
+    if (confirm("确定要删除这个商品吗？")) {
+        fetch(`/api/product/delete/${productId}`, {
+            method: 'DELETE'
         })
-        .catch(error => console.error('Error deleting product:', error));
+            .then(response => {
+                if (!response.ok) {
+                    // 同样处理自定义错误信息
+                    return response.text().then(text => {
+                        if (text.includes("无法删除商品")) {
+                            throw new Error(text);
+                        } else {
+                            throw new Error(`删除失败: ${response.status} ${response.statusText}`);
+                        }
+                    });
+                }
+                return response.text();
+            })
+            .then(message => {
+                alert(message);
+                loadProducts(); // 重新加载商品列表
+            })
+            .catch(error => {
+                console.error('Error deleting product:', error);
+                if (error.message) {
+                    alert(error.message);
+                } else {
+                    alert('删除商品失败');
+                }
+            });
+    }
 }

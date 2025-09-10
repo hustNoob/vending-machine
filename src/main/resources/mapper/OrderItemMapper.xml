@@ -47,4 +47,7 @@
         ORDER BY SUM(quantity) DESC
     </select>
 
+    <select id="countOrderItemsByProductId" parameterType="int" resultType="int">
+        SELECT COUNT(*) FROM order_item WHERE product_id = #{productId}
+    </select>
 </mapper>

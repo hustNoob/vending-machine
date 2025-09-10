@@ -63,62 +63,91 @@ function loadUserInfo() {
         .then(response => response.json())
         .then(user => {
             document.getElementById('userBalance').innerText = user.balance;
+
+            // 清空之前的统计信息（不添加标题）
+            document.getElementById('userPurchaseStats').innerHTML = '';
+            document.getElementById('productSalesRanking').innerHTML = '';
+            document.getElementById('recommendedProducts').innerHTML = '';
+
             loadUserPurchaseStats(userId); // 加载用户购买统计
             loadProductSalesRanking(); // 加载商品销量排行
-            loadRecommendedProducts(userId); // 加载推荐商品
+            loadRecommendedProducts(userId); // 调用新的函数并传入 userId
         })
         .catch(error => console.error('Error loading user info:', error));
 }
 
 // 加载用户购买统计
+// 完全重写的 loadUserPurchaseStats 函数
 function loadUserPurchaseStats(userId) {
     fetch(`/api/order/user/${userId}`)
         .then(response => response.json())
         .then(orders => {
             const statsDiv = document.getElementById('userPurchaseStats');
-            statsDiv.innerHTML = ''; // 清空
+            statsDiv.innerHTML = ''; // 清空内容
+
+            // 调试信息
+            console.log("用户订单数据:", orders);
 
             if (orders && orders.length > 0) {
-                // 统计用户购买的商品数量
-                const productStats = {};
+                // 收集所有订单项
+                const allOrderItems = [];
                 orders.forEach(order => {
-                    if (order.orderItems) {
-                        order.orderItems.forEach(item => {
-                            if (productStats[item.productId]) {
-                                productStats[item.productId].quantity += item.quantity;
-                            } else {
-                                productStats[item.productId] = {
-                                    productId: item.productId,
-                                    productName: item.productName,
-                                    quantity: item.quantity
-                                };
-                            }
-                        });
+                    if (order.orderItems && Array.isArray(order.orderItems)) {
+                        allOrderItems.push(...order.orderItems);
                     }
                 });
 
-                // 按数量排序
-                const sortedStats = Object.values(productStats).sort((a, b) => b.quantity - a.quantity);
+                console.log("所有订单项:", allOrderItems);
 
-                if (sortedStats.length > 0) {
-                    const table = document.createElement('table');
-                    table.innerHTML = `
-                        <thead>
-                            <tr>
-                                <th>商品名称</th>
-                                <th>购买数量</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${sortedStats.map(stat => `
+                if (allOrderItems.length > 0) {
+                    // 统计商品购买数量
+                    const productStats = {};
+                    allOrderItems.forEach(item => {
+                        const productId = item.productId;
+                        const productName = item.productName || `商品${productId}`;
+                        const quantity = item.quantity || 0;
+
+                        if (productStats[productId]) {
+                            productStats[productId].quantity += quantity;
+                        } else {
+                            productStats[productId] = {
+                                productId: productId,
+                                productName: productName,
+                                quantity: quantity
+                            };
+                        }
+                    });
+
+                    console.log("商品统计:", productStats);
+
+                    // 转换为数组并排序
+                    const sortedStats = Object.values(productStats)
+                        .filter(stat => stat.quantity > 0)
+                        .sort((a, b) => b.quantity - a.quantity);
+
+                    if (sortedStats.length > 0) {
+                        // 创建表格
+                        const table = document.createElement('table');
+                        table.innerHTML = `
+                            <thead>
                                 <tr>
-                                    <td>${stat.productName}</td>
-                                    <td>${stat.quantity}</td>
+                                    <th>商品名称</th>
+                                    <th>购买数量</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    `;
-                    statsDiv.appendChild(table);
+                            </thead>
+                            <tbody>
+                                ${sortedStats.map(stat => `
+                                    <tr>
+                                        <td>${stat.productName}</td>
+                                        <td>${stat.quantity}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        `;
+                        statsDiv.appendChild(table);
+                    } else {
+                        statsDiv.innerHTML = '<p>暂无购买记录</p>';
+                    }
                 } else {
                     statsDiv.innerHTML = '<p>暂无购买记录</p>';
                 }
@@ -127,10 +156,11 @@ function loadUserPurchaseStats(userId) {
             }
         })
         .catch(error => {
-            console.error('Error loading user purchase stats:', error);
+            console.error('加载用户购买统计失败:', error);
             document.getElementById('userPurchaseStats').innerHTML = '<p>加载失败</p>';
         });
 }
+
 
 // 修改商品销量排行函数，显示具体销量
 function loadProductSalesRanking() {
@@ -139,7 +169,7 @@ function loadProductSalesRanking() {
         .then(response => response.json())
         .then(salesData => {
             const rankingDiv = document.getElementById('productSalesRanking');
-            rankingDiv.innerHTML = ''; // 清空
+            rankingDiv.innerHTML = ''; // 清空内容
 
             if (salesData && salesData.length > 0) {
                 // 获取所有商品信息
@@ -428,53 +458,74 @@ function checkout() {
 function loadRecommendedProducts(userId) {
     const machineId = document.getElementById('machineSelect').value;
 
-    // 先获取当前售货机的商品库存信息
+    if (!machineId) {
+        // 如果没有选中售货机，清空显示并返回
+        const recommendedDiv = document.getElementById('recommendedProducts');
+        recommendedDiv.innerHTML = '<p>请选择售货机</p>';
+        return;
+    }
+
+    // 1. 先获取这个售货机中所有已添加的商品库存信息
     fetch(`/api/vending-machine-product/${machineId}/products`)
         .then(response => response.json())
         .then(machineProducts => {
-            // 创建商品ID到库存的映射
+            // 2. 创建一个map，将商品id映射到库存
             const stockMap = {};
             machineProducts.forEach(p => {
                 stockMap[p.productId] = p.stock;
             });
 
-            // 获取推荐商品
-            return fetch(`/api/user/recommend/${userId}`)
+            // 3. 获取所有商品（用于显示名称、价格等信息）
+            // 这里我们仍然使用原始的API，因为它包含所有商品的信息
+            return fetch('/api/product/all')
                 .then(response => response.json())
-                .then(products => {
-                    return { products, stockMap };
+                .then(allProducts => {
+                    return { allProducts, stockMap };
                 });
         })
-        .then(({ products, stockMap }) => {
+        .then(({ allProducts, stockMap }) => {
             const recommendedDiv = document.getElementById('recommendedProducts');
+            recommendedDiv.innerHTML = ''; // 清空内容，不添加标题
 
-            if (products && products.length > 0) {
-                products.forEach(product => {
-                    // 获取该商品在当前售货机中的库存
-                    const stock = stockMap[product.id] || 0;
+            // 4. 只显示该售货机上的商品
+            if (allProducts && allProducts.length > 0) {
+                let displayedProducts = 0;
+                allProducts.forEach(product => {
+                    // 检查这个商品是否在这个售货机上
+                    if (stockMap.hasOwnProperty(product.id)) {
+                        const stock = stockMap[product.id];
+                        const div = document.createElement('div');
+                        div.className = 'product';
+                        div.innerHTML = `
+                            <p>${product.name}</p>
+                            <p>价格: ¥${product.price.toFixed(2)}</p>
+                            <p>库存: ${stock}</p>
+                            <button onclick='addToCart({
+                                productId: ${product.id},
+                                productName: "${product.name}",
+                                price: ${product.price},
+                                stock: ${stock},
+                                vendingMachineId: ${machineId}
+                            })'>购买</button>
+                        `;
+                        recommendedDiv.appendChild(div);
+                        displayedProducts++;
 
-                    const div = document.createElement('div');
-                    div.className = 'product';
-                    div.innerHTML = `
-                        <p>${product.name}</p>
-                        <p>价格: ¥${product.price.toFixed(2)}</p>
-                        <p>库存: ${stock}</p>
-                        <button onclick='addToCart({
-                            productId: ${product.id},
-                            productName: "${product.name}",
-                            price: ${product.price},
-                            stock: ${stock},
-                            vendingMachineId: ${machineId}
-                        })'>购买</button>
-                    `;
-                    recommendedDiv.appendChild(div);
+                        // 可选：限制显示数量（比如只显示前几个）
+                        // if (displayedProducts >= 8) return;
+                    }
                 });
+
+                if (displayedProducts === 0) {
+                    recommendedDiv.innerHTML = '<p>该售货机暂无商品</p>';
+                }
             } else {
-                recommendedDiv.innerHTML += '<p>暂无推荐商品</p>';
+                recommendedDiv.innerHTML = '<p>暂无可显示商品</p>';
             }
         })
         .catch(error => {
-            console.error('Error loading recommended products:', error);
-            document.getElementById('recommendedProducts').innerHTML = '<p>加载失败</p>';
+            console.error('Error loading products for machine:', error);
+            const recommendedDiv = document.getElementById('recommendedProducts');
+            recommendedDiv.innerHTML = '<p>加载失败</p>';
         });
 }

@@ -22,4 +22,5 @@ public interface OrderMapper {
 
     List<Order> queryOrders(@Param("userId") int userId, @Param("status") int status, @Param("machineId") int machineId);
 
+    int countOrdersByUserId(@Param("userId") int userId);
 }

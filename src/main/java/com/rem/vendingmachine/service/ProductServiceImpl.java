@@ -31,6 +31,11 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public boolean deleteProductById(int id) {
+        // 检查商品是否被订单项引用
+        if (orderItemMapper.countOrderItemsByProductId(id) > 0) {
+            throw new RuntimeException("无法删除商品，该商品已被订单使用，不允许删除。");
+        }
+        // 执行删除操作
         return productMapper.deleteProductById(id) > 0;
     }
 

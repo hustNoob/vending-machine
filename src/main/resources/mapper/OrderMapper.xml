@@ -10,15 +10,15 @@
         VALUES (#{userId}, #{totalPrice}, CURRENT_TIMESTAMP)
     </insert>
 
-    <!-- 根据订单 ID 查询订单 -->
-    <!-- 查询订单详情，并加载商品清单 -->
+    <!-- 根据订单 ID 查询订单详情，并加载商品清单 -->
     <select id="selectOrderById" resultMap="OrderWithItemsResultMap">
         SELECT o.id AS order_id, o.user_id, o.total_price, o.create_time,
                o.payment_time, o.completion_time,
-               oi.id AS item_id, oi.order_id, oi.product_id, oi.quantity,
-               oi.price, oi.subtotal
-        FROM order_table AS o
-                 LEFT JOIN order_item AS oi ON o.id = oi.order_id
+               oi.id AS item_id, oi.order_id AS item_order_id, oi.product_id, oi.quantity,
+               oi.price, oi.subtotal, p.name AS product_name
+        FROM order_table o
+                 LEFT JOIN order_item oi ON o.id = oi.order_id
+                 LEFT JOIN product p ON oi.product_id = p.id
         WHERE o.id = #{id}
     </select>
 
@@ -32,21 +32,26 @@
         <result property="completionTime" column="completion_time"/>
         <collection property="orderItems" ofType="OrderItem">
             <id property="id" column="item_id"/>
-            <result property="orderId" column="order_id"/>
+            <result property="orderId" column="item_order_id"/>
             <result property="productId" column="product_id"/>
             <result property="quantity" column="quantity"/>
             <result property="price" column="price"/>
             <result property="subtotal" column="subtotal"/>
+            <result property="productName" column="product_name"/>
         </collection>
     </resultMap>
 
-
     <!-- 根据用户 ID 查询订单历史 -->
-    <select id="selectOrdersByUserId" parameterType="int" resultType="order">
-        SELECT *
-        FROM order_table
-        WHERE user_id = #{userId}
-        ORDER BY create_time DESC
+    <select id="selectOrdersByUserId" parameterType="int" resultMap="OrderWithItemsResultMap">
+        SELECT o.id AS order_id, o.user_id, o.total_price, o.create_time,
+               o.payment_time, o.completion_time,
+               oi.id AS item_id, oi.order_id AS item_order_id, oi.product_id, oi.quantity,
+               oi.price, oi.subtotal, p.name AS product_name
+        FROM order_table o
+                 LEFT JOIN order_item oi ON o.id = oi.order_id
+                 LEFT JOIN product p ON oi.product_id = p.id
+        WHERE o.user_id = #{userId}
+        ORDER BY o.create_time DESC
     </select>
 
     <!-- 订单支付 -->
@@ -62,14 +67,19 @@
         SET completion_time = CURRENT_TIMESTAMP
         WHERE id = #{orderId} AND payment_time IS NOT NULL AND completion_time IS NULL
     </update>
-    
-    <select id="selectAllOrders" resultType="order">
-        select *
-        from order_table
+
+    <select id="selectAllOrders" resultMap="OrderWithItemsResultMap">
+        SELECT o.id AS order_id, o.user_id, o.total_price, o.create_time,
+               o.payment_time, o.completion_time,
+               oi.id AS item_id, oi.order_id AS item_order_id, oi.product_id, oi.quantity,
+               oi.price, oi.subtotal, p.name AS product_name
+        FROM order_table o
+                 LEFT JOIN order_item oi ON o.id = oi.order_id
+                 LEFT JOIN product p ON oi.product_id = p.id
     </select>
 
     <select id="queryOrders" resultType="Order">
-        SELECT * FROM orders WHERE 1=1
+        SELECT * FROM order_table WHERE 1=1
         <if test="userId != null">
             AND user_id = #{userId}
         </if>
@@ -81,4 +91,7 @@
         </if>
     </select>
 
+    <select id="countOrdersByUserId" parameterType="int" resultType="int">
+        SELECT COUNT(*) FROM order_table WHERE user_id = #{userId}
+    </select>
 </mapper>

@@ -50,12 +50,17 @@ public class ProductController {
      * @param id 删除商品的id
      * @return 商品删除结果
      */
-    @DeleteMapping("/delete/{id}")   //这里用了Restful风格
+    @DeleteMapping("/delete/{id}")
     public String deleteProduct(@PathVariable int id) {
-        if (productService.deleteProductById(id)) {
-            return "商品删除成功！";
+        try {
+            if (productService.deleteProductById(id)) {
+                return "商品删除成功！";
+            }
+            return "商品删除失败！";
+        } catch (RuntimeException e) {
+            // 捕获业务异常并返回错误信息给前端
+            return e.getMessage();
         }
-        return "商品删除失败！";
     }
 
     /**

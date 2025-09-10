@@ -82,10 +82,15 @@ public class UserController {
 
     @DeleteMapping("/delete/{id}")
     public String deleteUserById(@PathVariable int id){
-        if(userService.deleteUserById(id)) {
-            return "删除成功";
+        try {
+            if(userService.deleteUserById(id)) {
+                return "删除成功";
+            }
+            return "删除失败";
+        } catch (RuntimeException e) {
+            // 捕获业务异常并返回错误信息给前端
+            return e.getMessage();
         }
-        return "删除失败";
     }
 
     @GetMapping("/recommend/{userId}")

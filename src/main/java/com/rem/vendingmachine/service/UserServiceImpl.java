@@ -1,6 +1,7 @@
 package com.rem.vendingmachine.service;
 
 import com.rem.vendingmachine.dao.OrderItemMapper;
+import com.rem.vendingmachine.dao.OrderMapper;
 import com.rem.vendingmachine.dao.ProductMapper;
 import com.rem.vendingmachine.dao.UserMapper;
 import com.rem.vendingmachine.model.Product;
@@ -24,6 +25,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private OrderItemMapper orderItemMapper;
+
+    @Autowired
+    private OrderMapper orderMapper;
 
     @Override
     public boolean registerUser(User user) {
@@ -65,7 +69,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean deleteUserById(int userId) {
-        return userMapper.deleteUserByUserId(userId)>0;
+        // 检查用户是否有关联的订单
+        if (orderMapper.countOrdersByUserId(userId) > 0) {
+            // 这里抛异常也没问题，因为控制器会捕获
+            throw new RuntimeException("无法删除用户，该用户有关联的订单，不允许删除。");
+        }
+        // 执行删除操作
+        return userMapper.deleteUserByUserId(userId) > 0;
     }
 
     @Override
