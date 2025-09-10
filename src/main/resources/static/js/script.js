@@ -495,7 +495,6 @@ function loadRecommendedProducts(userId) {
             });
 
             // 3. 获取所有商品（用于显示名称、价格等信息）
-            // 这里我们仍然使用原始的API，因为它包含所有商品的信息
             return fetch('/api/product/all')
                 .then(response => response.json())
                 .then(allProducts => {
@@ -506,41 +505,138 @@ function loadRecommendedProducts(userId) {
             const recommendedDiv = document.getElementById('recommendedProducts');
             recommendedDiv.innerHTML = ''; // 清空内容，不添加标题
 
-            // 4. 只显示该售货机上的商品
-            if (allProducts && allProducts.length > 0) {
-                let displayedProducts = 0;
-                allProducts.forEach(product => {
-                    // 检查这个商品是否在这个售货机上
-                    if (stockMap.hasOwnProperty(product.id)) {
-                        const stock = stockMap[product.id];
-                        const div = document.createElement('div');
-                        div.className = 'product';
-                        div.innerHTML = `
-                            <p>${product.name}</p>
-                            <p>价格: ¥${product.price.toFixed(2)}</p>
-                            <p>库存: ${stock}</p>
-                            <button onclick='addToCart({
-                                productId: ${product.id},
-                                productName: "${product.name}",
-                                price: ${product.price},
-                                stock: ${stock},
-                                vendingMachineId: ${machineId}
-                            })'>购买</button>
-                        `;
-                        recommendedDiv.appendChild(div);
-                        displayedProducts++;
+            // 4. 获取用户的购买历史
+            fetch(`/api/order/user/${userId}`)
+                .then(response => response.json())
+                .then(orders => {
+                    // 统计用户购买商品的数量
+                    const userProductStats = {};
+                    if (orders && orders.length > 0) {
+                        orders.forEach(order => {
+                            if (order.orderItems && Array.isArray(order.orderItems)) {
+                                order.orderItems.forEach(item => {
+                                    const productId = item.productId;
+                                    const quantity = item.quantity || 0;
 
-                        // 可选：限制显示数量（比如只显示前几个）
-                        // if (displayedProducts >= 8) return;
+                                    if (userProductStats[productId]) {
+                                        userProductStats[productId] += quantity;
+                                    } else {
+                                        userProductStats[productId] = quantity;
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    // 统计所有商品的总销量
+                    const allProductStats = {};
+                    if (orders && orders.length > 0) {
+                        orders.forEach(order => {
+                            if (order.orderItems && Array.isArray(order.orderItems)) {
+                                order.orderItems.forEach(item => {
+                                    const productId = item.productId;
+                                    const quantity = item.quantity || 0;
+
+                                    if (allProductStats[productId]) {
+                                        allProductStats[productId] += quantity;
+                                    } else {
+                                        allProductStats[productId] = quantity;
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    // 5. 过滤出当前售货机上的商品
+                    let machineProducts = allProducts.filter(product => stockMap.hasOwnProperty(product.id));
+
+                    // 6. 根据用户购买历史和总销量进行排序
+                    machineProducts.sort((a, b) => {
+                        const userA = userProductStats[a.id] || 0;
+                        const userB = userProductStats[b.id] || 0;
+                        const allA = allProductStats[a.id] || 0;
+                        const allB = allProductStats[b.id] || 0;
+
+                        // 如果用户都买了某商品，按用户购买数量排序（多→少）
+                        if (userA > 0 && userB > 0) {
+                            return userB - userA;
+                        }
+                        // 如果用户A买了，B没买，A排前面
+                        if (userA > 0) return -1;
+                        // 如果用户B买了，A没买，B排前面
+                        if (userB > 0) return 1;
+                        // 如果都没买，按总销量排序（多→少）
+                        return allB - allA;
+                    });
+
+                    // 7. 显示商品
+                    if (machineProducts && machineProducts.length > 0) {
+                        let displayedProducts = 0;
+                        machineProducts.forEach(product => {
+                            const stock = stockMap[product.id];
+                            const div = document.createElement('div');
+                            div.className = 'product';
+                            div.innerHTML = `
+                                <p>${product.name}</p>
+                                <p>价格: ¥${product.price.toFixed(2)}</p>
+                                <p>库存: ${stock}</p>
+                                <button onclick='addToCart({
+                                    productId: ${product.id},
+                                    productName: "${product.name}",
+                                    price: ${product.price},
+                                    stock: ${stock},
+                                    vendingMachineId: ${machineId}
+                                })'>购买</button>
+                            `;
+                            recommendedDiv.appendChild(div);
+                            displayedProducts++;
+
+                            // 可选：限制显示数量
+                            // if (displayedProducts >= 10) return;
+                        });
+
+                        if (displayedProducts === 0) {
+                            recommendedDiv.innerHTML = '<p>该售货机暂无商品</p>';
+                        }
+                    } else {
+                        recommendedDiv.innerHTML = '<p>暂无可显示商品</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading user purchase history:', error);
+                    // 如果获取用户历史失败，按总销量排序显示
+                    const machineProducts = allProducts.filter(product => stockMap.hasOwnProperty(product.id));
+                    machineProducts.sort((a, b) => {
+                        const allA = allProductStats[a.id] || 0;
+                        const allB = allProductStats[b.id] || 0;
+                        return allB - allA;
+                    });
+
+                    if (machineProducts && machineProducts.length > 0) {
+                        let displayedProducts = 0;
+                        machineProducts.forEach(product => {
+                            const stock = stockMap[product.id];
+                            const div = document.createElement('div');
+                            div.className = 'product';
+                            div.innerHTML = `
+                                <p>${product.name}</p>
+                                <p>价格: ¥${product.price.toFixed(2)}</p>
+                                <p>库存: ${stock}</p>
+                                <button onclick='addToCart({
+                                    productId: ${product.id},
+                                    productName: "${product.name}",
+                                    price: ${product.price},
+                                    stock: ${stock},
+                                    vendingMachineId: ${machineId}
+                                })'>购买</button>
+                            `;
+                            recommendedDiv.appendChild(div);
+                            displayedProducts++;
+                        });
+                    } else {
+                        recommendedDiv.innerHTML = '<p>暂无可显示商品</p>';
                     }
                 });
-
-                if (displayedProducts === 0) {
-                    recommendedDiv.innerHTML = '<p>该售货机暂无商品</p>';
-                }
-            } else {
-                recommendedDiv.innerHTML = '<p>暂无可显示商品</p>';
-            }
         })
         .catch(error => {
             console.error('Error loading products for machine:', error);
