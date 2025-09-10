@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,7 +24,7 @@ public class OrderController {
      * @param request 订单请求体，把创建订单封装成一个专门的类
      * @return 订单创建结果
      */
-// 修改 OrderController 中的 createOrder
+    // 修改 OrderController 中的 createOrder
     @PostMapping("/create")
     public String createOrder(@RequestBody CreateOrderRequest request) {
         try {
@@ -77,36 +76,6 @@ public class OrderController {
     }
 
     /**
-     * 模拟订单支付操作
-     * @param orderId 订单 ID
-     * @return 支付完成提示
-     */
-    @PutMapping("/pay/{orderId}")
-    public String payOrder(@PathVariable int orderId) {
-        try {
-            orderService.markOrderAsPaid(orderId);
-            return "订单支付成功！";
-        } catch (Exception e) {
-            return "订单支付失败: " + e.getMessage();
-        }
-    }
-
-    /**
-     * 模拟订单完成操作
-     * @param orderId 订单 ID
-     * @return 订单完成提示
-     */
-    @PutMapping("/complete/{orderId}")
-    public String completeOrder(@PathVariable int orderId) {
-        try {
-            orderService.markOrderAsCompleted(orderId);
-            return "订单已完成!";
-        } catch (Exception e) {
-            return "订单出现问题: " + e.getMessage();
-        }
-    }
-
-    /**
      * 查询某订单信息
      * @param orderId 订单 ID
      * @return 订单信息
@@ -117,8 +86,8 @@ public class OrderController {
         if (order == null) {
             throw new RuntimeException("订单未找到: " + orderId);
         }
-        System.out.println("订单支付情况: " + order.isPaid());
-        System.out.println("订单完成情况: " + order.isCompleted());
+        // 移除支付状态和完成状态的输出
+        // 系统不再有支付/完成状态
         return order;
     }
 
@@ -157,10 +126,6 @@ public class OrderController {
             String orderId = (String) orderData.get("orderId");
             double totalPrice = ((Number) orderData.get("totalPrice")).doubleValue();
 
-            // 这里其实应该调用 orderService.createOrderFromMachine 来处理逻辑
-            // 但为了简化，你可以在这里添加实际的订单处理逻辑
-
-            // 可选：在这里处理订单创建逻辑，比如扣减库存等
             System.out.println("通过API创建订单 - 订单ID: " + orderId);
 
             return "订单成功处理: " + orderId;

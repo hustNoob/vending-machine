@@ -118,11 +118,9 @@ public class VendingMachineController {
         return productService.listAllProducts(); // 返回所有商品
     }
 
-    // 临时测试接口
-    @GetMapping("/debug/all-machine-ids")
+    @GetMapping("/allMachineId")
     public List<Integer> getAllMachineIds() {
-        List<VendingMachine> machines = vendingMachineService.getAllVendingMachines();
-        return machines.stream().map(VendingMachine::getId).collect(Collectors.toList());
+        return vendingMachineService.geAllVendingMachineId();
     }
 
     @PostMapping("/mqtt/order")

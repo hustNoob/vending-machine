@@ -14,9 +14,9 @@ public interface OrderMapper {
 
     List<Order> selectOrdersByUserId(@Param("userId") int userId); // 查询用户的订单记录
 
-    int updatePaymentStatus(@Param("orderId") int orderId);
-
-    int updateCompletionStatus(@Param("orderId") int orderId);
+//    int updatePaymentStatus(@Param("orderId") int orderId);
+//
+//    int updateCompletionStatus(@Param("orderId") int orderId);
 
     List<Order> selectAllOrders();
 

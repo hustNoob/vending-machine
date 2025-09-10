@@ -17,14 +17,4 @@ public class Order {
     private BigDecimal totalPrice; // 总金额
     private LocalDateTime createTime; // 下单时间
     private List<OrderItem> orderItems; // 商品清单
-    private LocalDateTime paymentTime; // 支付时间
-    private LocalDateTime completionTime; // 订单完成时间
-
-    public boolean isPaid() {
-        return paymentTime != null;
-    }
-
-    public boolean isCompleted() {
-        return completionTime != null;
-    }
 }

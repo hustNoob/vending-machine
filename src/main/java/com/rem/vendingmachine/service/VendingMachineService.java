@@ -20,7 +20,9 @@ public interface VendingMachineService {
     List<VendingMachine> getVendingMachinesByStatus(int status);
 
     //for mqtt
-    public void updateLastUpdateTime(int machineId, LocalDateTime lastUpdateTime);
+    void updateLastUpdateTime(int machineId, LocalDateTime lastUpdateTime);
 
-    public void updateVendingMachineStatus(int machineId, double temperature, int status);
+    void updateVendingMachineStatus(int machineId, double temperature, int status);
+
+    List<Integer> geAllVendingMachineId();
 }

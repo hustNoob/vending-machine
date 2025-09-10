@@ -13,8 +13,7 @@ public class SimulatedDeviceMain {
     // 获取数据库中所有售货机ID的工具方法
     private static List<Integer> fetchAllMachineIdsFromBackend() {
         try {
-            // 请根据你的实际端口和域名修改
-            String apiUrl = "http://localhost:8080/api/vending-machine/debug/all-machine-ids";
+            String apiUrl = "http://localhost:8080/api/vending-machine/allMachineId";
             URL url = new URL(apiUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");

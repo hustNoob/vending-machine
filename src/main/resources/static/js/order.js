@@ -1,3 +1,4 @@
+// 文件: order.js
 window.onload = function () {
     const form = document.getElementById("orderFilterForm");
     form.onsubmit = function (e) {
@@ -55,13 +56,6 @@ function formatDateTime(dateTime) {
     return dateTime ? new Date(dateTime).toLocaleString() : 'N/A';
 }
 
-// 获取订单状态文本（基于后端返回的数据）
-function getOrderStatus(order) {
-    if (order.isCompleted) return '已完成';
-    if (order.isPaid) return '已支付';
-    return '未支付';
-}
-
 
 // 筛选订单
 function filterOrders() {
@@ -99,21 +93,7 @@ function filterOrders() {
     }
 }
 
-// 将状态值转换为文本表示
-function getOrderStatusText(status) {
-    switch (status) {
-        case 0:
-            return '进行中';
-        case 1:
-            return '已完成';
-        case 2:
-            return '已取消';
-        default:
-            return '未知状态';
-    }
-}
-
-//订单详情
+// 订单详情
 function viewOrderDetails(orderId) {
     fetch(`/api/order/details/${orderId}`)
         .then(response => response.json())

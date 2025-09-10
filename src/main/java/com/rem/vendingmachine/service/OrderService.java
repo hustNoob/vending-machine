@@ -29,18 +29,10 @@ public interface OrderService {
     List<Integer> getRecommendedProductsForUser(int userId);
     List<Integer> getTopSellingProducts();
 
-    //订单支付
-    boolean markOrderAsPaid(int orderId);
-
-    //订单完成
-    boolean markOrderAsCompleted(int orderId);
-
     //查询全部订单
     List<Order> getAllOrders();
 
-    void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice);
-
-    public List<Order> queryOrders(Integer userId, Integer status, Integer machineId);
+    List<Order> queryOrders(Integer userId, Integer status, Integer machineId);
 
     void processOrderFromMQTT(String tempOrderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items);
 

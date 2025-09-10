@@ -1,3 +1,4 @@
+// 文件: service/OrderServiceImpl.java
 package com.rem.vendingmachine.service;
 
 import com.rem.vendingmachine.dao.*;
@@ -106,9 +107,6 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal newBalance = userBalance.subtract(totalPrice);
         userMapper.updateBalanceByUserId(userId, newBalance);
 
-        // Step 7: 更新订单支付状态 (这里可以考虑是否需要，因为余额已经扣了)
-        // orderMapper.updatePaymentStatus(order.getId()); // 可选，取决于业务流程
-
         return true;
     }
 
@@ -177,8 +175,6 @@ public class OrderServiceImpl implements OrderService {
         return true;
     }
 
-
-
     //查询账单所有详细信息
     @Override
     public Order getOrderWithDetailsById(int orderId) {
@@ -217,51 +213,6 @@ public class OrderServiceImpl implements OrderService {
         return orderItemMapper.getTopSellingProducts();
     }
 
-    //支付账单
-    @Override
-    public boolean markOrderAsPaid(int orderId) {
-        // 1. 查询订单详情
-        Order order = orderMapper.selectOrderById(orderId);
-        if (order == null) {
-            throw new RuntimeException("Order not found: " + orderId);
-        }
-
-        // 2. 查询用户余额
-        BigDecimal userBalance = userMapper.getBalanceByUserId(order.getUserId());
-        if (userBalance == null) {
-            throw new RuntimeException("User balance not found for userId: " + order.getUserId());
-        }
-
-        // 3. 检查余额是否足够支付
-        if (userBalance.compareTo(order.getTotalPrice()) < 0) {
-            // 余额不足
-            throw new RuntimeException("Insufficient balance. Current balance: " + userBalance);
-        }
-
-        // 4. 扣除余额
-        BigDecimal newBalance = userBalance.subtract(order.getTotalPrice());
-        userMapper.updateBalanceByUserId(order.getUserId(), newBalance);
-
-        // 5. 更新订单支付状态
-        int rowsAffected = orderMapper.updatePaymentStatus(orderId);
-        if (rowsAffected == 0) {
-            throw new RuntimeException("Order not found or already paid: " + orderId);
-        }
-
-        return true;
-    }
-
-
-    //完成账单
-    @Override
-    public boolean markOrderAsCompleted(int orderId) {
-        int rowsAffected = orderMapper.updateCompletionStatus(orderId);
-        if (rowsAffected == 0) {
-            throw new RuntimeException("Order not found, not paid, or already completed: " + orderId);
-        }
-        return true;
-    }
-
     //据账单号查询账单信息
     @Override
     public Order getOrderById(int orderId) {
@@ -273,60 +224,61 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.selectAllOrders();
     }
 
-    @Override
-    public void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice) {
-        System.out.println("【处理MQTT订单】订单ID: " + orderId + ", 售货机ID: " + vendingMachineId + ", 用户ID: " + userId + ", 金额: " + totalPrice);
 
-        try {
-            // 找到数据库中该售货机中的所有商品和库存
-            List<VendingMachineProduct> products = vendingMachineProductMapper.selectProductsByVendingMachineId(vendingMachineId);
-
-            System.out.println("【调试】售货机 " + vendingMachineId + " 中的商品列表: " + products);
-
-            // 为了演示，我们假设订单数据存储在内存中的某个地方（实际应该从MQTT payload中获取）
-            // 在实际系统中，你可能需要在MQTT消息中包含商品详情
-
-            // 这里你可以添加完整的订单处理逻辑
-
-            // 1. 检查用户余额
-            BigDecimal userBalance = userMapper.getBalanceByUserId(userId);
-            System.out.println("【调试】用户余额: " + userBalance + ", 订单金额: " + totalPrice);
-
-            if (userBalance == null) {
-                System.err.println("【错误】找不到用户余额");
-                return;
-            }
-
-            BigDecimal totalAmount = BigDecimal.valueOf(totalPrice);
-            if (userBalance.compareTo(totalAmount) < 0) {
-                System.err.println("【错误】余额不足");
-                return;
-            }
-
-            // 2. 扣减用户余额
-            BigDecimal newBalance = userBalance.subtract(totalAmount);
-            int rowsUpdated = userMapper.updateBalanceByUserId(userId, newBalance);
-            System.out.println("【调试】用户余额更新结果: " + rowsUpdated);
-
-            // 3. 创建订单（在数据库中）
-            Order order = new Order();
-            order.setUserId(userId);
-            order.setTotalPrice(totalAmount);
-            order.setCreateTime(LocalDateTime.now());
-            orderMapper.insertOrder(order);
-            System.out.println("【调试】订单创建成功，ID: " + order.getId());
-
-            // 4. 如果有商品详情（这部分需要你重构或补充逻辑），就处理商品扣减
-            // 由于MQTT消息结构，我们目前只能处理这些逻辑
-
-            // 订单创建成功后，你可以在这里添加订单处理的其他业务逻辑
-            System.out.println("【成功】订单处理完成: " + orderId);
-
-        } catch (Exception e) {
-            System.err.println("【错误】处理MQTT订单时发生异常: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//    @Override
+//    public void createOrderFromMachine(int vendingMachineId, int userId, String orderId, double totalPrice) {
+//        System.out.println("【处理MQTT订单】订单ID: " + orderId + ", 售货机ID: " + vendingMachineId + ", 用户ID: " + userId + ", 金额: " + totalPrice);
+//
+//        try {
+//            // 找到数据库中该售货机中的所有商品和库存
+//            List<VendingMachineProduct> products = vendingMachineProductMapper.selectProductsByVendingMachineId(vendingMachineId);
+//
+//            System.out.println("【调试】售货机 " + vendingMachineId + " 中的商品列表: " + products);
+//
+//            // 为了演示，我们假设订单数据存储在内存中的某个地方（实际应该从MQTT payload中获取）
+//            // 在实际系统中，你可能需要在MQTT消息中包含商品详情
+//
+//            // 这里你可以添加完整的订单处理逻辑
+//
+//            // 1. 检查用户余额
+//            BigDecimal userBalance = userMapper.getBalanceByUserId(userId);
+//            System.out.println("【调试】用户余额: " + userBalance + ", 订单金额: " + totalPrice);
+//
+//            if (userBalance == null) {
+//                System.err.println("【错误】找不到用户余额");
+//                return;
+//            }
+//
+//            BigDecimal totalAmount = BigDecimal.valueOf(totalPrice);
+//            if (userBalance.compareTo(totalAmount) < 0) {
+//                System.err.println("【错误】余额不足");
+//                return;
+//            }
+//
+//            // 2. 扣减用户余额
+//            BigDecimal newBalance = userBalance.subtract(totalAmount);
+//            int rowsUpdated = userMapper.updateBalanceByUserId(userId, newBalance);
+//            System.out.println("【调试】用户余额更新结果: " + rowsUpdated);
+//
+//            // 3. 创建订单（在数据库中）
+//            Order order = new Order();
+//            order.setUserId(userId);
+//            order.setTotalPrice(totalAmount);
+//            order.setCreateTime(LocalDateTime.now());
+//            orderMapper.insertOrder(order);
+//            System.out.println("【调试】订单创建成功，ID: " + order.getId());
+//
+//            // 4. 如果有商品详情（这部分需要你重构或补充逻辑），就处理商品扣减
+//            // 由于MQTT消息结构，我们目前只能处理这些逻辑
+//
+//            // 订单创建成功后，你可以在这里添加订单处理的其他业务逻辑
+//            System.out.println("【成功】订单处理完成: " + orderId);
+//
+//        } catch (Exception e) {
+//            System.err.println("【错误】处理MQTT订单时发生异常: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 
 
     public List<Order> queryOrders(Integer userId, Integer status, Integer machineId) {
@@ -412,26 +364,16 @@ public class OrderServiceImpl implements OrderService {
             userMapper.updateBalanceByUserId(userId, newBalance);
             System.out.println("【调试】用户余额已更新");
 
-            System.out.println("【成功】MQTT订单处理完成，真实订单ID: " + realOrderId);
-
+            // 添加日志提示
+            System.out.println("【成功】MQTT订单处理完成: " + tempOrderId + " -> DB ID: " + realOrderId);
         } catch (Exception e) {
             System.err.println("【错误】处理MQTT订单时发生异常: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    // 在 OrderServiceImpl.java 中添加实现
     @Override
     public List<Map<String, Object>> getTopSellingProductsWithQuantities() {
         return orderItemMapper.getTopSellingProductsWithQuantities();
     }
-
-    // 添加辅助方法获取商品销量
-    private int getProductSalesQuantity(int productId) {
-        // 这里需要在 OrderItemMapper 中添加新的SQL查询
-        // 暂时返回0，稍后实现
-        return 0;
-    }
-
-
 }

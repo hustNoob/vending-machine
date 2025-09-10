@@ -44,6 +44,10 @@ public class VendingMachineServiceImpl implements VendingMachineService {
         return vendingMachineMapper.selectVendingMachinesByStatus(status);
     }
 
+    @Override
+    public List<Integer> geAllVendingMachineId() {
+        return vendingMachineMapper.selectAllVendingMachineId();
+    }
 
     //for mqtt
     public void updateLastUpdateTime(int machineId, LocalDateTime lastUpdateTime) {
