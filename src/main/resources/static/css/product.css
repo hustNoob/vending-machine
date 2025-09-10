@@ -1,0 +1,242 @@
+/* product.css - 商品管理页面专用样式 */
+
+/* 整体布局 */
+.product-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    gap: 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* 顶部返回按钮居中 */
+.header {
+    text-align: center;
+    margin: 10px 0 20px 0;
+    padding: 0;
+}
+
+.back-button {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 15px 30px;
+    font-size: 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0 auto;
+    display: block;
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}
+
+/* 左右两列布局 - 复制用户页面的布局策略 */
+.product-left-column {
+    flex: 0 0 auto;
+    min-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.product-stats-column {
+    flex: 0 0 auto;
+    min-width: 400px;
+}
+
+/* 商品统计容器 */
+.product-stats-container {
+    width: 100%;
+    background-color: #ffffff;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    height: fit-content;
+}
+
+/* 新增商品模块 */
+.product-form {
+    width: 100%;
+    background-color: #ffffff;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.product-form h2 {
+    margin-top: 0;
+    color: #343a40;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* 新增商品表单 */
+.product-form input {
+    width: calc(100% - 20px);
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.product-form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #28a745;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.product-form button:hover {
+    background-color: #218838;
+}
+
+/* 商品列表表格 */
+.product-list {
+    width: 100%;
+    background-color: #ffffff;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    margin-top: 0;
+}
+
+.product-list h2 {
+    margin-top: 0;
+    color: #343a40;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.product-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.product-list th, .product-list td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+.product-list th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #495057;
+}
+
+.product-list td {
+    vertical-align: middle;
+}
+
+.product-list td button {
+    padding: 6px 12px;
+    border: none;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.product-list td button:hover {
+    background-color: #c82333;
+}
+
+/* 销量排行区域 */
+#productSalesRanking {
+    margin-top: 20px;
+}
+
+/* 销量排行表格 */
+#productSalesRanking table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#productSalesRanking th,
+#productSalesRanking td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+#productSalesRanking th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #495057;
+}
+
+#productSalesRanking tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#productSalesRanking tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .product-container {
+        flex-direction: column;
+        gap: 30px;
+        padding: 10px;
+        align-items: center;
+    }
+
+    .header {
+        text-align: center;
+        margin: 10px 0;
+    }
+
+    .back-button {
+        padding: 12px 25px;
+        font-size: 18px;
+        margin: 0 auto;
+        display: block;
+    }
+
+    .product-left-column,
+    .product-stats-column {
+        width: 100%;
+        min-width: auto;
+        flex: none;
+    }
+
+    .product-form,
+    .product-list {
+        width: 100%;
+        padding: 15px;
+    }
+
+    .product-list th, .product-list td {
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+/* 加载状态 */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}

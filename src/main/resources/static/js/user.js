@@ -1,5 +1,6 @@
 window.onload = function () {
     loadUsers();
+    loadUserStatsSelect();
 
     // 提交新增用户表单
     const userCreateForm = document.getElementById("userCreateForm");
@@ -47,6 +48,34 @@ function loadUsers() {
         .catch(error => console.error('Error loading users:', error));
 }
 
+// 加载用户选择器
+function loadUserStatsSelect() {
+    fetch('/api/user/all')
+        .then(response => response.json())
+        .then(users => {
+            const select = document.getElementById('userStatsSelect');
+            select.innerHTML = '<option value="">请选择用户查看统计</option>';
+
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.text = user.username;
+                select.appendChild(option);
+            });
+
+            // 绑定选择事件
+            select.onchange = function() {
+                const userId = this.value;
+                if (userId) {
+                    loadUserPurchaseStats(userId);
+                } else {
+                    document.getElementById('userPurchaseStats').innerHTML = '';
+                }
+            };
+        })
+        .catch(error => console.error('Error loading users for select:', error));
+}
+
 // 创建用户
 function createUser() {
     const username = document.getElementById("newUsername").value;
@@ -61,6 +90,7 @@ function createUser() {
         .then(message => {
             alert(message);
             loadUsers(); // 重新加载用户列表
+            loadUserStatsSelect(); // 重新加载用户选择器
             // 清空表单
             document.getElementById("newUsername").value = '';
             document.getElementById("newPassword").value = '';
@@ -110,6 +140,7 @@ function saveUser(userId) {
         .then(message => {
             alert(message);
             loadUsers(); // 重新加载用户列表
+            loadUserStatsSelect(); // 重新加载用户选择器
         })
         .catch(error => {
             console.error('Error updating user:', error);
@@ -144,6 +175,7 @@ function deleteUser(userId) {
             .then(message => {
                 alert(message);
                 loadUsers(); // 重新加载用户列表
+                loadUserStatsSelect(); // 重新加载用户选择器
             })
             .catch(error => console.error('Error deleting user:', error));
     }
@@ -168,9 +200,94 @@ function updateUserBalance(userId) {
         .then(message => {
             alert(message);
             loadUsers(); // 重新加载用户列表
+            loadUserStatsSelect(); // 重新加载用户选择器
         })
         .catch(error => {
             console.error('Error updating user balance:', error);
             alert('更新用户余额失败');
+        });
+}
+
+// 加载用户购买统计
+function loadUserPurchaseStats(userId) {
+    fetch(`/api/order/user/${userId}`)
+        .then(response => response.json())
+        .then(orders => {
+            const statsDiv = document.getElementById('userPurchaseStats');
+            statsDiv.innerHTML = ''; // 清空内容
+
+            // 调试信息
+            console.log("用户订单数据:", orders);
+
+            if (orders && orders.length > 0) {
+                // 收集所有订单项
+                const allOrderItems = [];
+                orders.forEach(order => {
+                    if (order.orderItems && Array.isArray(order.orderItems)) {
+                        allOrderItems.push(...order.orderItems);
+                    }
+                });
+
+                console.log("所有订单项:", allOrderItems);
+
+                if (allOrderItems.length > 0) {
+                    // 统计商品购买数量
+                    const productStats = {};
+                    allOrderItems.forEach(item => {
+                        const productId = item.productId;
+                        const productName = item.productName || `商品${productId}`;
+                        const quantity = item.quantity || 0;
+
+                        if (productStats[productId]) {
+                            productStats[productId].quantity += quantity;
+                        } else {
+                            productStats[productId] = {
+                                productId: productId,
+                                productName: productName,
+                                quantity: quantity
+                            };
+                        }
+                    });
+
+                    console.log("商品统计:", productStats);
+
+                    // 转换为数组并排序
+                    const sortedStats = Object.values(productStats)
+                        .filter(stat => stat.quantity > 0)
+                        .sort((a, b) => b.quantity - a.quantity);
+
+                    if (sortedStats.length > 0) {
+                        // 创建表格
+                        const table = document.createElement('table');
+                        table.innerHTML = `
+                            <thead>
+                                <tr>
+                                    <th>商品名称</th>
+                                    <th>购买数量</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedStats.map(stat => `
+                                    <tr>
+                                        <td>${stat.productName}</td>
+                                        <td>${stat.quantity}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        `;
+                        statsDiv.appendChild(table);
+                    } else {
+                        statsDiv.innerHTML = '<p>暂无购买记录</p>';
+                    }
+                } else {
+                    statsDiv.innerHTML = '<p>暂无购买记录</p>';
+                }
+            } else {
+                statsDiv.innerHTML = '<p>暂无购买记录</p>';
+            }
+        })
+        .catch(error => {
+            console.error('加载用户购买统计失败:', error);
+            document.getElementById('userPurchaseStats').innerHTML = '<p>加载失败</p>';
         });
 }

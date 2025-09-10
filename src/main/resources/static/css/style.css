@@ -101,15 +101,29 @@ body {
     background-color: #0056b3;
 }
 
-/* 用户信息区域 */
+/* 隐藏右侧区域（关键修改） */
 .info-panel {
-    width: 30%; /* 右侧宽度分配 */
-    background-color: #f8f9fa;
-    padding: 20px;
-    box-sizing: border-box;
-    border-left: 1px solid #ddd;
+    width: 0; /* 设置宽度为0 */
+    min-width: 0; /* 确保不会占用宽度 */
+    padding: 0; /* 清除内边距 */
+    margin: 0; /* 清除外边距 */
+    border: none; /* 移除边框 */
+    display: none; /* 完全隐藏 */
+    visibility: hidden; /* 确保不可见 */
+    overflow: hidden; /* 隐藏溢出内容 */
 }
 
+/* 优化布局，确保内容正常显示 */
+.container {
+    flex-wrap: nowrap; /* 不允许换行 */
+}
+
+/* 当右侧被隐藏时，主要内容区域自动扩展 */
+.container > main.content {
+    flex: 1; /* 自动扩展占据剩余空间 */
+}
+
+/* 用户信息区域（可选的其他隐藏方式） */
 #orderList {
     margin-top: 10px;
     height: 300px;
@@ -119,7 +133,6 @@ body {
     background-color: #fff;
     box-sizing: border-box;
 }
-
 /* ------------------ 返回主页按钮样式 ------------------ */
 
 /* 顶部按钮容器 */

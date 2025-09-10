@@ -4,15 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MQTT 控制</title>
-    <!-- 引入主样式表 -->
-    <link rel="stylesheet" href="/css/style.css">
-    <!-- 引入 MQTT 专用样式表 -->
+    <!-- 只引用 MQTT 专用样式表 -->
     <link rel="stylesheet" href="/css/mqtt.css">
+    <style>
+        .header {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .back-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 auto;
+            display: block;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
 <!-- 返回主页按钮 -->
 <div class="header">
-    <button onclick="window.location.href='index.html'" class="back-button">返回主页</button>
+    <button onclick="window.location.href='manage.html'" class="back-button">返回主页</button>
 </div>
 
 <!-- 主要 MQTT 容器 -->
@@ -83,15 +102,6 @@
                 <option value="2">需要维护 (2)</option>
             </select>
             <button type="button" onclick="sendSetStatusCommand()">下发状态命令</button>
-        </div>
-
-        <div class="command-group">
-            <h4>通用命令 (JSON)</h4>
-            <form id="mqttCommonCommandForm">
-                <input type="text" id="commonTopic" placeholder="请输入主题 (Topic)">
-                <textarea id="commonPayload" placeholder="请输入消息内容 (Payload, JSON)"></textarea>
-                <button type="submit">发送通用命令</button>
-            </form>
         </div>
     </div> <!-- /命令下发区域 -->
 

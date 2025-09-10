@@ -7,6 +7,9 @@ window.onload = function () {
         event.preventDefault();
         createProduct();
     };
+
+    // 加载商品销量排行
+    loadProductSalesRanking();
 };
 
 // 加载商品列表
@@ -46,6 +49,9 @@ function createProduct() {
         .then(message => {
             alert(message); // 提示成功或失败消息
             loadProducts(); // 重新加载商品列表
+            // 清空表单
+            document.getElementById("productName").value = '';
+            document.getElementById("productPrice").value = '';
         })
         .catch(error => console.error('Error creating product:', error));
 }
@@ -82,4 +88,67 @@ function deleteProduct(productId) {
                 }
             });
     }
+}
+
+// 加载商品销量排行
+function loadProductSalesRanking() {
+    // 获取全局热销商品及其销量
+    fetch('/api/order/top-selling-with-quantities')
+        .then(response => response.json())
+        .then(salesData => {
+            const rankingDiv = document.getElementById('productSalesRanking');
+            rankingDiv.innerHTML = ''; // 清空内容
+
+            if (salesData && salesData.length > 0) {
+                // 获取所有商品信息
+                fetch('/api/product/all')
+                    .then(response => response.json())
+                    .then(allProducts => {
+                        // 创建商品ID到商品对象的映射
+                        const productMap = {};
+                        allProducts.forEach(product => {
+                            productMap[product.id] = product;
+                        });
+
+                        // 构建排行榜显示
+                        const rankingHtml = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>排名</th>
+                                        <th>商品名称</th>
+                                        <th>价格</th>
+                                        <th>销量</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${salesData.map((item, index) => {
+                            const product = productMap[item.productId];
+                            return product ? `
+                                            <tr>
+                                                <td>${index + 1}</td>
+                                                <td>${product.name}</td>
+                                                <td>¥${product.price.toFixed(2)}</td>
+                                                <td>${item.quantity}</td>
+                                            </tr>
+                                        ` : '';
+                        }).join('')}
+                                </tbody>
+                            </table>
+                        `;
+
+                        rankingDiv.innerHTML = rankingHtml;
+                    })
+                    .catch(error => {
+                        console.error('Error loading products:', error);
+                        rankingDiv.innerHTML = '<p>加载失败</p>';
+                    });
+            } else {
+                rankingDiv.innerHTML = '<p>暂无销量数据</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading product sales ranking:', error);
+            document.getElementById('productSalesRanking').innerHTML = '<p>加载失败</p>';
+        });
 }

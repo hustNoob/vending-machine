@@ -3,56 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>无人售货机管理系统</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>管理员界面</title>
+    <link rel="stylesheet" href="/css/manage.css">
 </head>
 <body>
 <!-- 页面容器 -->
 <div class="container">
     <!-- 左侧导航栏 -->
     <aside class="sidebar">
-        <h2>切换用户</h2>
-        <select id="userSelect"></select>
-        <h2>售货机</h2>
-        <select id="machineSelect"></select>
-
-        <hr>
-        <button onclick="window.location.href='user.html'" class="big-button">用户管理</button>
-        <button onclick="window.location.href='product.html'" class="big-button">商品管理</button>
-        <button onclick="window.location.href='order.html'" class="big-button">订单管理</button>
-        <button onclick="window.location.href='mqtt.html'" class="big-button">MQTT 控制</button>
-        <button onclick="window.location.href='vending-machine.html'" class="big-button">售货机管理</button>
+        <h1>管理员面板</h1>
+        <h3>欢迎进入管理员系统</h3>
     </aside>
 
-    <!-- 中间商品展示区域 -->
+    <!-- 中间内容区域 -->
     <main class="content">
-        <h1>商品列表</h1>
-        <!-- 推荐商品展示 -->
-        <div id="recommendedProducts">
-            <!-- 商品列表动态生成 -->
-        </div>
+        <h1>系统管理面板</h1>
+        <div class="dashboard">
+            <div class="stats-card">
+                <h3>系统概览</h3>
+                <p>用户总数: <span id="userCount">0</span></p>
+                <p>商品总数: <span id="productCount">0</span></p>
+                <p>订单总数: <span id="orderCount">0</span></p>
+                <p>售货机总数: <span id="machineCount">0</span></p>
+            </div>
 
-        <!-- 购物车 -->
-        <div id="cart">
-            <h3>购物车</h3>
-            <table>
-                <thead>
-                <tr>
-                    <th>商品名称</th>
-                    <th>单价</th>
-                    <th>数量</th>
-                    <th>总价</th>
-                    <th>操作</th>
-                </tr>
-                </thead>
-                <tbody id="cartItems">
-                <!-- 动态加载购物车内容 -->
-                </tbody>
-            </table>
-            <button id="checkoutButton" onclick="checkout()">去付款</button>
+            <div class="quick-actions">
+                <h3>快速操作</h3>
+                <button onclick="window.location.href='user.html'" class="action-button">管理用户</button>
+                <button onclick="window.location.href='product.html'" class="action-button">管理商品</button>
+                <button onclick="window.location.href='order.html'" class="action-button">查看订单</button>
+                <button onclick="window.location.href='mqtt.html'" class="action-button">MQTT 控制</button>
+                <button onclick="window.location.href='vending-machine.html'" class="action-button">管理售货机</button>
+            </div>
         </div>
-
     </main>
 </div>
+
+<script src="/js/manage.js"></script>
 </body>
 </html>

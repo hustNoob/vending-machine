@@ -1,0 +1,177 @@
+/* manage.css - 管理员界面专用样式 */
+
+/* ------------------ 全局样式 ------------------ */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+}
+
+/* 包含页面容器，统一布局 */
+.container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+}
+
+/* ------------------ 管理员界面样式 ------------------ */
+
+/* 左侧导航栏 */
+.sidebar {
+    width: 25%; /* 左侧宽度分配 */
+    background-color: #f8f9fa; /* 浅灰背景 */
+    padding: 20px;
+    box-sizing: border-box;
+    border-right: 1px solid #ddd;
+    text-align: center; /* 居中对齐 */
+}
+
+.sidebar h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #343a40;
+}
+
+.sidebar select {
+    width: 90%; /* 更宽的选择框 */
+    padding: 8px;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.big-button {
+    display: block;
+    width: 90%;
+    margin: 10px auto;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #17a2b8; /* 蓝绿按钮 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.big-button:hover {
+    background-color: #138496; /* 按钮悬停时的颜色 */
+}
+
+/* 中间内容区域 */
+.content {
+    flex: 1; /* 占据剩余空间 */
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+}
+
+.content h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #495057;
+}
+
+/* 仪表板区域 */
+.dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 统计卡片 */
+.stats-card {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stats-card h3 {
+    margin-top: 0;
+    color: #343a40;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 10px;
+}
+
+.stats-card p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.stats-card span {
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* 快速操作区域 */
+.quick-actions {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.quick-actions h3 {
+    margin-top: 0;
+    color: #343a40;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 10px;
+}
+
+.action-button {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px 15px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.action-button:hover {
+    background-color: #5a6268;
+}
+
+.action-button:nth-child(1) { background-color: #007bff; }
+.action-button:nth-child(1):hover { background-color: #0056b3; }
+
+.action-button:nth-child(2) { background-color: #28a745; }
+.action-button:nth-child(2):hover { background-color: #1e7e34; }
+
+.action-button:nth-child(3) { background-color: #ffc107; }
+.action-button:nth-child(3):hover { background-color: #e0a800; }
+
+.action-button:nth-child(4) { background-color: #6f42c1; }
+.action-button:nth-child(4):hover { background-color: #5a32a3; }
+
+.action-button:nth-child(5) { background-color: #fd7e14; }
+.action-button:nth-child(5):hover { background-color: #e06c00; }
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .content {
+        padding: 10px;
+    }
+
+    .action-button {
+        width: calc(50% - 10px);
+        margin: 5px 0;
+        display: block;
+    }
+}

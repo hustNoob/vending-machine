@@ -37,7 +37,6 @@ function displayOrders(orders) {
             <td>${order.userId}</td>
             <td>${formatPrice(order.totalPrice)}</td>
             <td>${formatDateTime(order.createTime)}</td>
-            <td>${order.isPaid ? '已支付' : '未支付'}</td> <!-- 支付状态 -->
             <td>
                 <button onclick="viewOrderDetails(${order.id})">详情</button>
             </td>
@@ -125,8 +124,6 @@ function viewOrderDetails(orderId) {
                 <p>用户 ID: ${order.userId}</p>
                 <p>总金额: ${formatPrice(order.totalPrice)}</p>
                 <p>下单时间: ${formatDateTime(order.createTime)}</p>
-                <p>支付时间: ${formatDateTime(order.paymentTime)}</p>
-                <p>完成时间: ${formatDateTime(order.completionTime)}</p>
                 <h4>商品清单:</h4>
                 <ul>
                     ${
