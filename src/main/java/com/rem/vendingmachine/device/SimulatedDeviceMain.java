@@ -79,22 +79,26 @@ public class SimulatedDeviceMain {
             tasks[i] = new SimulatedDeviceTask(clients[i]);
             tasks[i].start();
 
-            // 3. 订阅命令主题
-            Thread.sleep(500); // 简单等待一下
+            // 3. 简单等待一下，确保连接建立
+            Thread.sleep(500);
+
+            // 4. 订阅命令主题
             String commandTopic = "vendingmachine/command/" + machineId;
             clients[i].subscribe(commandTopic);
             System.out.println("设备 " + machineId + " 已订阅命令主题: " + commandTopic);
 
-            // 订阅库存响应主题
+            // 5. 订阅库存响应主题
             String inventoryResponseTopic = "vendingmachine/inventory/response/" + machineId;
             clients[i].subscribe(inventoryResponseTopic);
             System.out.println("设备 " + machineId + " 已订阅库存响应主题: " + inventoryResponseTopic);
 
-            // --- 订阅来自Web前端的购物车处理请求主题 ---
+            // --- 新增：订阅来自Web前端的购物车处理请求主题 ---
             String frontendOrderRequestTopic = "vendingmachine/frontend/order/request/" + machineId;
             clients[i].subscribe(frontendOrderRequestTopic);
             System.out.println("设备 " + machineId + " 已订阅前端订单请求主题: " + frontendOrderRequestTopic);
+            // --- 新增结束 ---
 
+            // 6. 初始请求一次库存
             clients[i].requestInventory();
         }
 

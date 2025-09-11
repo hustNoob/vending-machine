@@ -385,7 +385,7 @@ function removeFromCart(productId) {
 
 /**
  * 用户点击“去付款”按钮时的处理函数
- * 通知对应的模拟售货机去处理。
+ * 修改目标：不再直接创建订单，而是通知对应的模拟售货机去处理。
  */
 function checkout() {
     // 1. 获取当前选中的用户和售货机ID
@@ -466,6 +466,7 @@ function checkout() {
             alert("通知售货机失败，请重试！错误：" + error.message);
         });
 }
+
 
 function loadRecommendedProducts(userId) {
     const machineId = document.getElementById('machineSelect').value;

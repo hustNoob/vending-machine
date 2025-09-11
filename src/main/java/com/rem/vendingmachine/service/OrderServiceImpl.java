@@ -1,4 +1,3 @@
-// 文件: service/OrderServiceImpl.java
 package com.rem.vendingmachine.service;
 
 import com.rem.vendingmachine.dao.*;
@@ -248,7 +247,7 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal userBalance = userMapper.getBalanceByUserId(userId);
             if (userBalance == null) {
                 System.err.println("【服务端错误】找不到用户 (ID: " + userId + ") 或查询余额失败。");
-                return false;
+                return false; // 返回 false 表示处理失败
             }
 
             // 2. 初始化计算总价
@@ -267,13 +266,13 @@ public class OrderServiceImpl implements OrderService {
                 VendingMachineProduct vmProduct = vendingMachineProductMapper.selectVendingMachineProduct(vendingMachineId, productId);
                 if (vmProduct == null) {
                     System.err.println("【服务端错误】售货机 " + vendingMachineId + " 中不存在商品 " + productId);
-                    return false;
+                    return false; // 返回 false 表示处理失败
                 }
 
                 // b. 检查库存是否足够
                 if (vmProduct.getStock() < quantity) {
                     System.err.println("【服务端错误】商品 " + productId + " 库存不足。需要: " + quantity + ", 现有: " + vmProduct.getStock());
-                    return false;
+                    return false; // 返回 false 表示处理失败
                 }
 
                 // c. 计算小计 (务必使用数据库中的价格)
@@ -289,7 +288,7 @@ public class OrderServiceImpl implements OrderService {
             // 4. 检查总金额是否超过用户余额
             if (userBalance.compareTo(calculatedTotal) < 0) {
                 System.err.println("【服务端错误】用户 (ID: " + userId + ") 余额不足。余额: " + userBalance + ", 订单总价: " + calculatedTotal);
-                return false;
+                return false; // 返回 false 表示处理失败
             }
 
             // 5. --- 关键操作：所有校验通过，开始数据库操作 (应在事务中) ---
@@ -335,6 +334,7 @@ public class OrderServiceImpl implements OrderService {
 
             // 6. --- 操作完成 ---
             System.out.println("【服务端成功】MQTT订单 (ID: " + tempOrderId + " -> DB ID: " + realOrderId + ") 处理完成。");
+            return true; // 返回 true 表示处理成功
 
         } catch (Exception e) {
             // 7. --- 异常处理 ---
@@ -342,9 +342,10 @@ public class OrderServiceImpl implements OrderService {
             e.printStackTrace();
             // Spring 的 @Transactional 会自动回滚事务
             // 如果手动管理事务，这里需要回滚
+            return false; // 返回 false 表示处理失败
+        } finally {
+            System.out.println("=== OrderServiceImpl.processOrderFromMQTT 处理流程结束 ===");
         }
-        System.out.println("=== OrderServiceImpl.processOrderFromMQTT 处理流程结束 ===");
-        return false;
     }
 
     @Override

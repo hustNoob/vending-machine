@@ -104,18 +104,18 @@ public class OrderController {
         return orderService.queryOrders(userId, status, machineId);
     }
 
-    @PostMapping("/checkout")
-    public ResponseEntity<?> checkout(@RequestBody CheckoutRequest request) {
-        try {
-            boolean success = orderService.createOrder(request.getUserId(), request.getOrder());
-            if (!success) {
-                throw new RuntimeException("支付失败，请检查余额或库存");
-            }
-            return ResponseEntity.ok("支付成功！");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @PostMapping("/checkout")
+//    public ResponseEntity<?> checkout(@RequestBody CheckoutRequest request) {
+//        try {
+//            boolean success = orderService.createOrder(request.getUserId(), request.getOrder());
+//            if (!success) {
+//                throw new RuntimeException("支付失败，请检查余额或库存");
+//            }
+//            return ResponseEntity.ok("支付成功！");
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     // 添加一个新接口，允许后端直接通过API创建订单（而不是用户页面交互）
     @PostMapping("/create-by-mqtt")
