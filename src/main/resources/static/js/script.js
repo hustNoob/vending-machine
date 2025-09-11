@@ -383,10 +383,16 @@ function removeFromCart(productId) {
     updateCart();
 }
 
+/**
+ * 用户点击“去付款”按钮时的处理函数
+ * 通知对应的模拟售货机去处理。
+ */
 function checkout() {
+    // 1. 获取当前选中的用户和售货机ID
     const userId = parseInt(document.getElementById('userSelect').value, 10);
     const machineId = document.getElementById('machineSelect').value;
 
+    // 2. 基础校验
     if (!userId || userId <= 0) {
         alert("请先选择用户！");
         return;
@@ -402,75 +408,62 @@ function checkout() {
         return;
     }
 
-    // 计算总价
-    const totalPrice = cart.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    // 3. 构造一个临时的订单ID（用于设备端识别）
+    const tempOrderId = "WEB_ORDER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
-    // 获取当前用户余额
-    fetch(`/api/user/id/${userId}`)
-        .then(response => response.json())
-        .then(user => {
-            const userBalance = user.balance;
+    // 4. --- 核心修改：构造发送给设备的指令 ---
+    //     主题：vendingmachine/frontend/order/request/{machineId}
+    //     载荷：包含用户ID、临时订单ID、以及当前购物车内容
+    const deviceTopic = `vendingmachine/frontend/order/request/${machineId}`;
 
-            // 检查余额是否足够
-            if (userBalance < totalPrice) {
-                alert("余额不足请充值");
-                return;
+    const devicePayload = {
+        orderId: tempOrderId,  // 临时ID，用于设备关联和应答
+        userId: userId,        // 用户ID
+        cart: cart.map(item => ({ // 购物车内容
+            productId: item.productId,
+            quantity: item.quantity
+            // 注意：这里只发送了售货机ID和商品ID/数量，没有价格，
+            // 因为价格应由设备或服务端根据数据库确定。
+            // 如果 item 中还有其他设备需要的信息，也可以加上。
+        }))
+    };
+
+    // 5. --- 核心修改：通过后端API发送MQTT消息给指定的设备 ---
+    //     我们复用已有的 /api/test-publish 端点来发送这个指令
+    const publishData = {
+        topic: deviceTopic,
+        payload: JSON.stringify(devicePayload)
+    };
+
+    console.log("即将通过MQTT发送购物车处理请求到设备:", publishData);
+
+    fetch('/api/test-publish', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(publishData)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.text();
+        })
+        .then(message => {
+            console.log("MQTT指令发送成功:", message);
+            alert("已通知售货机处理您的订单，请稍候...");
 
-            // 余额足够，继续执行购买流程
-            // 使用时间戳作为临时订单ID
-            const tempOrderId = "TEMP_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+            // 6. 清空购物车（因为已提交给设备）
+            cart = [];
+            updateCart();
 
-            // 构造MQTT消息
-            const orderPayload = {
-                orderId: tempOrderId,
-                userId: userId,
-                machineId: machineId,
-                totalPrice: totalPrice,
-                items: cart.map(item => ({
-                    productId: item.productId,
-                    vendingMachineId: item.vendingMachineId,
-                    quantity: item.quantity
-                })),
-                timestamp: new Date().toISOString(),
-                source: "web"
-            };
+            // 7. 重新加载用户信息（余额可能已变）
+            loadUserInfo();
 
-            console.log("即将通过MQTT发送订单:", orderPayload);
-
-            // 通过后端API发送MQTT消息到指定主题
-            const publishData = {
-                topic: "vendingmachine/order/" + tempOrderId,
-                payload: JSON.stringify(orderPayload)
-            };
-
-            fetch('/api/test-publish', {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(publishData)
-            })
-                .then(response => response.text())
-                .then(message => {
-                    console.log("MQTT订单发送成功:", message);
-                    alert("订单已提交，正在处理中...");
-
-                    // 清空购物车
-                    cart = [];
-                    updateCart();
-
-                    // 重新加载商品和用户信息
-                    loadUserInfo();
-
-                    console.log("订单已通过MQTT上报");
-                })
-                .catch(error => {
-                    console.error("MQTT订单发送失败：", error);
-                    alert("订单提交失败，请重试！");
-                });
+            console.log("购物车已清空，用户信息已重新加载");
         })
         .catch(error => {
-            console.error("获取用户信息失败：", error);
-            alert("获取用户信息失败");
+            console.error("MQTT指令发送失败：", error);
+            alert("通知售货机失败，请重试！错误：" + error.message);
         });
 }
 

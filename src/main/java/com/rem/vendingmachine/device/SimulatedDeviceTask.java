@@ -15,6 +15,20 @@ public class SimulatedDeviceTask {
     public void start() {
         Timer timer = new Timer();
 
+//        // --- 模拟用户购买任务 ---
+//        //===============================================================
+//        timer.scheduleAtFixedRate(new TimerTask() {
+//            @Override
+//            public void run() {
+//                // 模拟一个用户ID，例如 1
+//                // 在真实场景中，这可能由某种方式确定（例如，设备端记录了最近使用的用户ID）
+//                int simulatedUserId = 1;
+//                System.out.println("[定时任务] 设备 " + client.getMachineId() + " 尝试模拟一次购买...");
+//                client.simulatePurchaseAndReportOrder(simulatedUserId);
+//            }
+//        }, 10000, 30000); // 延迟10秒启动，每30秒尝试一次模拟购买
+//        //================================================================
+
         // 心跳上报任务，每 10 秒一次
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override

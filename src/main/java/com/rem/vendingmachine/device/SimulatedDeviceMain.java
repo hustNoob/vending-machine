@@ -90,6 +90,11 @@ public class SimulatedDeviceMain {
             clients[i].subscribe(inventoryResponseTopic);
             System.out.println("设备 " + machineId + " 已订阅库存响应主题: " + inventoryResponseTopic);
 
+            // --- 订阅来自Web前端的购物车处理请求主题 ---
+            String frontendOrderRequestTopic = "vendingmachine/frontend/order/request/" + machineId;
+            clients[i].subscribe(frontendOrderRequestTopic);
+            System.out.println("设备 " + machineId + " 已订阅前端订单请求主题: " + frontendOrderRequestTopic);
+
             clients[i].requestInventory();
         }
 

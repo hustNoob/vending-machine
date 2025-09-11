@@ -8,9 +8,8 @@ import lombok.NoArgsConstructor;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -28,7 +27,8 @@ public class SimulatedDeviceClient {
     private double currentTemperature = 25.0; // 初始化一个默认温度
     private int currentStatus = 1;           // 初始化为在线状态
     private final ObjectMapper objectMapper = new ObjectMapper(); // 用于解析JSON命令
-    // --- 新增结束 ---
+
+    private final Map<Integer, Integer> cart = new HashMap<>();
 
     public SimulatedDeviceClient(String machineId) {
         try {
@@ -60,16 +60,18 @@ public class SimulatedDeviceClient {
 
     public void subscribe(String topic) {
         try {
-            // --- 修改：订阅回调函数 ---
+            // --- 订阅回调函数 ---
             client.subscribe(topic, (receivedTopic, message) -> {
                 String payload = new String(message.getPayload());
                 System.out.println("收到命令消息 - 主题: " + receivedTopic + ", 内容: " + payload);
                 // 调用处理命令的方法
-                // --- 修改：根据不同的主题调用不同处理方法 ---
+                // --- 根据不同的主题调用不同处理方法 ---
                 if (receivedTopic.startsWith("vendingmachine/inventory/response/")) {
                     handleInventoryResponse(payload);
                 } else if (receivedTopic.startsWith("vendingmachine/command/")) {
                     processCommand(payload);
+                } else if (receivedTopic.startsWith("vendingmachine/frontend/order/request/")) {
+                    handleFrontendOrderRequest(payload);
                 } else {
                     System.out.println("【警告】收到未知主题消息: " + receivedTopic);
                 }
@@ -181,15 +183,104 @@ public class SimulatedDeviceClient {
     }
 
     /**
-     * 模拟订单上报
+     * 处理来自前端的订单处理请求。
+     * 前端会发送包含用户ID和购物车信息的指令。
+     * 设备会模拟出货（更新内部库存），然后生成并上报包含完整商品明细的订单。
+     * @param payload 包含 orderId, userId, cart (items) 的JSON字符串
      */
-    public void reportOrder(String orderId, int userId, double totalPrice) {
-        String topic = "vendingmachine/order/" + orderId; // 保持原主题结构
-        String payload = String.format(
-                "{\"orderId\": \"%s\", \"userId\": %d, \"machineId\": \"%s\", \"totalPrice\": %.2f}",
-                orderId, userId, this.machineId, totalPrice
-        );
-        publish(topic, payload);
+    private void handleFrontendOrderRequest(String payload) {
+        try {
+            System.out.println("[设备 " + this.machineId + "] 收到来自前端的订单请求: " + payload);
+            JsonNode root = objectMapper.readTree(payload);
+
+            String frontendOrderId = root.path("orderId").asText(); // 从前端获取的订单ID
+            int userId = root.path("userId").asInt();
+            JsonNode cartNode = root.path("cart");
+
+            if (cartNode == null || !cartNode.isArray()) {
+                System.err.println("[设备 " + this.machineId + "] 订单请求缺少有效的购物车信息。");
+                return;
+            }
+
+            // 将前端的 cartNode 转换为 items 列表，用于上报
+            List<Map<String, Object>> itemsForReport = new ArrayList<>();
+            boolean inventorySufficient = true; // 标记库存是否足够
+
+            for (JsonNode itemNode : cartNode) {
+                int productId = itemNode.path("productId").asInt();
+                int quantity = itemNode.path("quantity").asInt();
+
+                // 检查本地库存是否足够
+                int currentStock = this.inventory.getOrDefault(productId, 0);
+                if (currentStock < quantity) {
+                    System.err.println("[设备 " + this.machineId + "] 商品 " + productId + " 库存不足 (需要: " + quantity + ", 现有: " + currentStock + ").");
+                    inventorySufficient = false;
+                    // 你可以在这里选择是跳过该商品还是直接拒绝整个订单
+                    // 为简化，我们选择库存不足时直接返回，不处理
+                    // 严格来说，这应该给前端一个反馈，这里先简化
+                    break;
+                }
+
+                Map<String, Object> item = new HashMap<>();
+                item.put("productId", productId);
+                item.put("quantity", quantity);
+                itemsForReport.add(item);
+            }
+
+            // 如果所有商品库存都足够
+            if (inventorySufficient && !itemsForReport.isEmpty()) {
+                // --- 关键模拟：模拟出货动作 ---
+                // 更新设备端的库存
+                for (Map<String, Object> item : itemsForReport) {
+                    int productId = (Integer) item.get("productId");
+                    int quantity = (Integer) item.get("quantity");
+                    int currentStock = this.inventory.getOrDefault(productId, 0);
+                    int newStock = currentStock - quantity;
+                    this.inventory.put(productId, newStock); // 更新内部库存
+                    System.out.println("[设备 " + this.machineId + "] 模拟出货: 商品 " + productId + " 数量 " + quantity + ", 剩余库存: " + newStock);
+                }
+                // --- 模拟出货结束 ---
+
+                // --- 关键操作：上报包含完整商品明细的订单 ---
+                // 这里复用修改后的 reportOrder 方法
+                this.reportOrder(frontendOrderId, userId, itemsForReport);
+                System.out.println("[设备 " + this.machineId + "] 已根据前端请求，模拟出货并上报完整订单。");
+            } else {
+                System.err.println("[设备 " + this.machineId + "] 因库存不足或购物车为空，未能处理前端订单请求。");
+                // 理论上应给前端或服务端一个失败反馈，此处暂略
+            }
+
+        } catch (Exception e) {
+            System.err.println("[设备 " + this.machineId + "] 处理前端订单请求失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 模拟订单上报
+     * @param orderId 订单ID
+     * @param userId 用户ID
+     * @param items 商品列表 (Map<productId, quantity> 或 List<Map<...>>)
+     */
+    public void reportOrder(String orderId, int userId, List<Map<String, Object>> items) {
+        String topic = "vendingmachine/order/" + orderId;
+
+        // 构造包含商品明细的完整 payload
+        Map<String, Object> payloadMap = new HashMap<>();
+        payloadMap.put("orderId", orderId);
+        payloadMap.put("userId", userId);
+        payloadMap.put("machineId", this.machineId);
+        // 注意：不直接传递总价，让服务端根据商品明细重新计算，更安全
+        // 如果必须传递，可以计算，但现在我们不传
+        payloadMap.put("items", items); // 关键：传递购买商品明细列表
+
+        try {
+            String payload = objectMapper.writeValueAsString(payloadMap);
+            publish(topic, payload);
+            System.out.println("[设备 " + this.machineId + "] 订单已上报 - ID: " + orderId + ", 主题: " + topic);
+        } catch (Exception e) {
+            System.err.println("[设备 " + this.machineId + "] 构造订单Payload失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -241,4 +332,77 @@ public class SimulatedDeviceClient {
                     machineId, currentTemperature, currentStatus, "构建JSON失败");
         }
     }
+
+    // --- 新增方法：模拟用户购买并上报订单 ---
+    /**
+     * 模拟在售货机上进行一次购买。
+     * 随机选择购物车中的1-3种商品，每个商品1-2件。
+     * 基于 inventory 中的商品和库存进行选择（避免买没有的）。
+     * 然后调用 reportOrder 完成上报。
+     */
+    public void simulatePurchaseAndReportOrder(int userId) {
+        if (this.currentStatus == 0) {
+            System.out.println("[设备 " + this.machineId + "] 处于离线状态，无法模拟购买。");
+            return;
+        }
+
+        // 清空上次购物车
+        this.cart.clear();
+
+        // 检查是否有可购买的商品
+        List<Integer> availableProducts = this.inventory.entrySet().stream()
+                .filter(e -> e.getValue() > 0) // 库存大于0
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        if (availableProducts.isEmpty()) {
+            System.out.println("[设备 " + this.machineId + "] 没有可购买的商品（库存为0）。");
+            return;
+        }
+
+        // 随机选择 1 - min(3, availableProducts.size()) 种商品
+        Random random = new Random();
+        int numItemsToBuy = random.nextInt(Math.min(3, availableProducts.size())) + 1;
+        Collections.shuffle(availableProducts);
+
+        double total = 0.0;
+        List<Map<String, Object>> itemsForPayload = new ArrayList<>();
+
+        for (int i = 0; i < numItemsToBuy; i++) {
+            int productId = availableProducts.get(i);
+            int quantity = random.nextInt(2) + 1; // 1 or 2
+            int currentStock = this.inventory.getOrDefault(productId, 0);
+            if (quantity > currentStock) {
+                quantity = currentStock; // 不买超过库存的
+            }
+            if (quantity > 0) {
+                // 这里假设我们不知道价格，需要服务端去查。或者，如果设备知道价格，
+                // 可以在 inventory 初始化或更新时一起维护。
+                // 为简化，我们让设备只知道ID和库存，价格让服务端查。
+                // 但为了上报总价，我们可以简单模拟一个价格（比如：ID * 0.1）
+                // 实际中，设备应该知道价格，或者与服务端同步价格列表。
+                // 这里我们简化处理，服务端会再次计算总价。
+                this.cart.put(productId, quantity);
+                Map<String, Object> item = new HashMap<>();
+                item.put("productId", productId);
+                item.put("quantity", quantity);
+                itemsForPayload.add(item);
+                // 暂时不计算 total，由服务端计算更准确。
+            }
+        }
+
+        if (this.cart.isEmpty()) {
+            System.out.println("[设备 " + this.machineId + "] 未能成功添加任何商品到购物车。");
+            return;
+        }
+
+        // 生成一个简单的订单ID
+        String orderId = "ORDER_" + this.machineId + "_" + System.currentTimeMillis();
+
+        // 使用修改后的 reportOrder 方法
+        this.reportOrder(orderId, userId, itemsForPayload);
+        System.out.println("[设备 " + this.machineId + "] 模拟购买完成，已上报订单: " + orderId);
+    }
+// --- 新增方法结束 ---
+
 }

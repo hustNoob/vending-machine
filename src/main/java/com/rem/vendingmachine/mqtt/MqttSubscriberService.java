@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -277,74 +278,93 @@ public class MqttSubscriberService {
     }
 
     /**
-     * 处理订单消息
+     * 处理来自设备的完整订单上报消息
+     * 接收由设备模拟出货后上报的包含完整商品明细的订单，并进行处理。
+     * 这是新的核心处理流程。
+     * @param topic     MQTT 主题
+     * @param payload   MQTT 消息内容 (JSON)
+     * @param log       原始日志对象
      */
     private void handleOrder(String topic, String payload, MqttLog log) {
-        try {
-            System.out.println("=== 处理MQTT订单 ===");
-            System.out.println("收到订单消息 - 主题: " + topic);
-            System.out.println("收到订单消息 - payload: " + payload);
+        System.out.println("=== 开始处理设备上报的【完整】订单 ===");
+        System.out.println("收到订单消息 - 主题: " + topic);
+        System.out.println("收到订单消息 - payload: " + payload);
 
-            // 解析 JSON 消息
+        try {
+            // 1. 解析 JSON 消息
             JsonNode root = objectMapper.readTree(payload);
 
-            String originalOrderId = root.get("orderId").asText();
-            int userId = root.get("userId").asInt();
-            String vendingMachineIdStr = root.get("machineId").asText();
-            double totalPrice = root.get("totalPrice").asDouble();
+            String originalOrderId = root.path("orderId").asText();
+            int userId = root.path("userId").asInt();
+            String vendingMachineIdStr = root.path("machineId").asText();
 
-            // 解析商品项目
+            // 2. --- 核心修改：解析并验证商品列表 ---
             List<Map<String, Object>> items = new ArrayList<>();
-            if (root.has("items") && root.get("items").isArray()) {
-                for (JsonNode itemNode : root.get("items")) {
+            JsonNode itemsNode = root.path("items");
+            if (itemsNode != null && itemsNode.isArray()) {
+                for (JsonNode itemNode : itemsNode) {
                     Map<String, Object> item = new HashMap<>();
-                    item.put("productId", itemNode.get("productId").asInt());
-                    item.put("quantity", itemNode.get("quantity").asInt());
+                    item.put("productId", itemNode.path("productId").asInt());
+                    item.put("quantity", itemNode.path("quantity").asInt());
+                    // 可根据需要添加商品名称、单价等，如果设备上报的话
                     items.add(item);
                 }
+            } else {
+                System.err.println("[服务端] 订单消息缺少有效的 'items' 列表, Payload: " + payload);
+                // 可以记录错误日志或发送MQTT Ack错误消息
+                return;
             }
+
+            if (items.isEmpty()) {
+                System.err.println("[服务端] 订单消息中的 'items' 列表为空, Payload: " + payload);
+                return;
+            }
+            // --- 核心修改结束 ---
 
             int vendingMachineId = Integer.parseInt(vendingMachineIdStr);
 
             System.out.println("解析订单信息 - 原始订单ID: " + originalOrderId + ", 用户ID: " + userId +
-                    ", 售货机ID: " + vendingMachineId + ", 总价: " + totalPrice);
+                    ", 售货机ID: " + vendingMachineId + ", 商品项数: " + items.size());
 
-            // 处理订单并获取真实ID
-            int realOrderId = processOrderAndGetRealId(userId, vendingMachineId, totalPrice, items);
+            // 3. --- 调用服务层的处理核心逻辑 ---
+            //    注意：我们不再需要原来的 processOrderAndGetRealId，
+            //    因为其功能已被整合进 processOrderCore (将在下一步实现)
+            boolean success = orderService.processOrderFromMQTT(
+                    originalOrderId, // tempOrderId
+                    userId,
+                    vendingMachineId,
+                    0.0, // totalPrice, 由 processOrderCore 内部计算，此处传0或忽略
+                    items // 包含完整商品明细的列表
+            );
 
-            if (realOrderId > 0) {
-                // 构造包含真实ID的新消息并重新发布
-                Map<String, Object> newPayload = new HashMap<>();
-                newPayload.put("orderId", String.valueOf(realOrderId)); // 使用真实ID
-                newPayload.put("userId", userId);
-                newPayload.put("machineId", vendingMachineIdStr);
-                newPayload.put("totalPrice", totalPrice);
-                newPayload.put("items", items);
-                newPayload.put("realOrderId", realOrderId);
-                newPayload.put("originalOrderId", originalOrderId);
-                newPayload.put("timestamp", System.currentTimeMillis());
-
-                String finalPayload = objectMapper.writeValueAsString(newPayload);
-                String finalTopic = "vendingmachine/order/processed/" + realOrderId;
-
-                // 重新发布包含真实ID的消息
-                mqttPublisherService.publish(finalTopic, finalPayload);
-                System.out.println("重新发布包含真实ID的订单消息 - 主题: " + finalTopic);
+            if (success) {
+                System.out.println("[服务端] 订单 " + originalOrderId + " 处理成功。");
+                // 可选：发布一个确认消息给设备
+                // String ackTopic = "vendingmachine/order/ack/" + originalOrderId;
+                // mqttPublisherService.publish(ackTopic, "{\"status\":\"success\", \"orderId\":\"" + originalOrderId + "\"}");
+            } else {
+                System.err.println("[服务端] 订单 " + originalOrderId + " 处理失败。");
+                // 可选：发布一个失败消息给设备
+                // String ackTopic = "vendingmachine/order/ack/" + originalOrderId;
+                // mqttPublisherService.publish(ackTopic, "{\"status\":\"failed\", \"orderId\":\"" + originalOrderId + "\", \"reason\":\"Processing failed on server.\"}");
             }
 
-            System.out.println("订单已完成处理");
+            System.out.println("[服务端] 订单 " + originalOrderId + " 已完成处理流程。");
 
-            // 存储原始日志
+            // 4. 存储原始日志 (保持不变)
             synchronized (messageLogs) {
                 messageLogs.get("order").add(log);
             }
-            System.out.println("订单数据已写入日志");
+            System.out.println("[服务端] 订单数据已写入日志");
+
         } catch (Exception e) {
-            System.err.println("处理MQTT订单时出错: " + e.getMessage());
+            System.err.println("[服务端] 处理MQTT订单时出错: " + e.getMessage());
             e.printStackTrace();
         }
         System.out.println("========================");
     }
+
+
 
     /**
      * 处理订单并返回真实数据库ID
@@ -535,4 +555,126 @@ public class MqttSubscriberService {
         allOrders.sort((a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
         return allOrders;
     }
+
+    /**
+     * 处理订单的核心逻辑 (重构后)
+     * 根据来自设备或API的用户、机器、商品明细信息，完成订单创建、库存扣减、余额扣除。
+     * @param userId 用户ID
+     * @param vendingMachineId 售货机ID
+     * @param items 商品明细列表 (包含productId, quantity)
+     * @return 是否处理成功
+     */
+    public boolean processOrderCore(int userId, int vendingMachineId, List<Map<String, Object>> items) {
+        System.out.println("=== processOrderCore 开始执行 ===");
+        Connection conn = null;
+        boolean success = false;
+        try {
+            // 1. 开启事务 (如果需要，虽然Spring Service层应该已经管理了)
+            // conn = dataSource.getConnection(); // 示例，实际由Spring管理
+            // conn.setAutoCommit(false);
+
+            // 2. 检查用户余额
+            BigDecimal userBalance = userMapper.getBalanceByUserId(userId);
+            if (userBalance == null) {
+                System.err.println("【错误】用户(ID: " + userId + ") 余额查询失败或用户不存在");
+                return false;
+            }
+
+            BigDecimal calculatedTotal = BigDecimal.ZERO;
+
+            // 3. 预先验证所有商品库存和计算总价
+            List<VendingMachineProduct> vmProducts = new ArrayList<>(); // 缓存查询结果
+            List<BigDecimal> itemSubtotals = new ArrayList<>();
+            for (Map<String, Object> item : items) {
+                int productId = (Integer) item.get("productId");
+                int quantity = (Integer) item.get("quantity");
+
+                // 查询售货机商品信息
+                VendingMachineProduct vmProduct = vendingMachineProductMapper.selectVendingMachineProduct(vendingMachineId, productId);
+                if (vmProduct == null) {
+                    System.err.println("【错误】售货机 " + vendingMachineId + " 中不存在商品 " + productId);
+                    return false; // 或抛异常回滚
+                }
+                vmProducts.add(vmProduct); // 保存查询结果
+
+                if (vmProduct.getStock() < quantity) {
+                    System.err.println("【错误】商品 " + productId + " 库存不足，需要 " + quantity + "，现有 " + vmProduct.getStock());
+                    return false; // 或抛异常回滚
+                }
+
+                // 计算小计 (必须用数据库里的价格，不能信设备)
+                BigDecimal itemSubtotal = vmProduct.getPrice().multiply(BigDecimal.valueOf(quantity));
+                calculatedTotal = calculatedTotal.add(itemSubtotal);
+                itemSubtotals.add(itemSubtotal); // 保存小计
+            }
+
+
+            // 4. 检查用户余额是否足够支付计算出的总价
+            if (userBalance.compareTo(calculatedTotal) < 0) {
+                System.err.println("【错误】用户(ID: " + userId + ") 余额不足。余额: " + userBalance + ", 订单总价: " + calculatedTotal);
+                return false; // 或抛异常回滚
+            }
+
+            // 5. 所有检查通过，开始处理
+
+            // 5a. 创建主订单
+            Order order = new Order();
+            order.setUserId(userId);
+            order.setTotalPrice(calculatedTotal); // 使用服务端计算的总价
+            order.setCreateTime(LocalDateTime.now());
+
+            orderMapper.insertOrder(order); // 插入订单，获取数据库真实ID
+            int realOrderId = order.getId(); // 获取真实ID
+            System.out.println("【调试】订单创建成功，真实数据库ID: " + realOrderId);
+
+
+            // 5b. 处理订单项和库存扣减
+            for (int i = 0; i < items.size(); i++) {
+                Map<String, Object> item = items.get(i);
+                VendingMachineProduct vmProduct = vmProducts.get(i); // 使用预查询结果
+                BigDecimal itemSubtotal = itemSubtotals.get(i);      // 使用预计算小计
+
+                int productId = (Integer) item.get("productId");
+                int quantity = (Integer) item.get("quantity");
+
+                // 5b1. 扣减库存 (注意：传入负数表示减少)
+                vendingMachineProductMapper.updateVendingMachineProductStock(vendingMachineId, productId, -quantity, quantity);
+                System.out.println("【调试】商品 " + productId + " 库存已扣减 " + quantity);
+
+                // 5b2. 插入订单项
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrderId(realOrderId); // 使用真实的数据库订单ID
+                orderItem.setProductId(productId);
+                orderItem.setQuantity(quantity);
+                orderItem.setPrice(vmProduct.getPrice()); // 使用数据库价格
+                orderItem.setSubtotal(itemSubtotal);      // 使用预计算小计
+                orderItemMapper.insertOrderItem(orderItem);
+                System.out.println("【调试】订单项已插入，商品ID: " + productId + ", 数量: " + quantity);
+            }
+
+            // 5c. 更新用户余额
+            BigDecimal newBalance = userBalance.subtract(calculatedTotal);
+            userMapper.updateBalanceByUserId(userId, newBalance);
+            System.out.println("【调试】用户(ID: " + userId + ") 余额已更新为: " + newBalance);
+
+            // 6. 提交事务 (如果手动管理)
+            // conn.commit();
+            success = true;
+            System.out.println("【成功】核心订单处理流程完成。");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("【严重错误】处理核心订单流程时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            // 7. 回滚事务 (如果手动管理)
+            // if (conn != null) try { conn.rollback(); } catch (SQLException se) { se.printStackTrace(); }
+            return false;
+        } finally {
+            // 8. 关闭连接 (如果手动管理)
+            // if (conn != null) try { conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            System.out.println("=== processOrderCore 执行结束 (成功: " + success + ") ===");
+        }
+        // Spring 的 @Transactional 注解应该会处理好数据库事务
+    }
+
 }

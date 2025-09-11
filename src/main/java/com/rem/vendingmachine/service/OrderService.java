@@ -34,7 +34,7 @@ public interface OrderService {
 
     List<Order> queryOrders(Integer userId, Integer status, Integer machineId);
 
-    void processOrderFromMQTT(String tempOrderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items);
+    boolean processOrderFromMQTT(String tempOrderId, int userId, int vendingMachineId, double totalPrice, List<Map<String, Object>> items);
 
     List<Map<String, Object>> getTopSellingProductsWithQuantities();
 }
